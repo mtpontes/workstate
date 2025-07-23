@@ -1,0 +1,17 @@
+[tool.black]
+line-length = 120
+target-version = ['py313']
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+fix = true
+show-fixes = true
+
+[tool.ruff.lint]
+ignore = ["E501"]
+select = ["E", "W", "F"]
+
+[tool.ruff.lint.isort]
+force-wrap-aliases = true
+split-on-trailing-comma = true

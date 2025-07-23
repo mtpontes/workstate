@@ -1,0 +1,12 @@
+src/
+.ruff_cache/
+__pycache__
+venv
+.venv
+requirements.txt
+pyproject.*
+.git
+.gitignore
+LICENSE
+README.md
+main.py
