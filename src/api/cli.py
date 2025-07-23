@@ -29,6 +29,8 @@ Example of use:
     $ workstate download
     $ workstate save my-project
     $ workstate status
+    $ workstate configure
+    $ workstate config
 
 Author: mtpontes
 """
