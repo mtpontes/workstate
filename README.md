@@ -310,30 +310,20 @@ O arquivo `.workstateignore` funciona de forma similar ao `.gitignore`, mas defi
 ### Exemplo .workstateignore para Python:
 
 ```gitignore
-# Arquivos de ambiente
-.env
-.env.local
-.env.production
-
-# Configurações de IDE
-/.vscode/
-/.idea/
-
-# Bancos de dados locais  
-*.sqlite3
-*.db
-
-# Containers de desenvolvimento
-docker-compose.override.yml
-/.devcontainer/
-
-# Configuração local
-local_settings.py
-config/local.json
-
-# Dados de desenvolvimento
-/fixtures/
-/test_data/
+# Ignora arquivos do repositório e mantém arquivos de desenvolvimento local de um projeto Python
+src/
+.ruff_cache/
+__pycache__
+venv
+.venv
+requirements.txt
+pyproject.*
+.git
+.gitignore
+LICENSE
+README.md
+main.py
+logs/
 ```
 
 </details>
