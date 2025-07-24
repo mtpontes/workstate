@@ -17,9 +17,7 @@ class InitCommandImpl(CommandI):
             tool: CodeTool = CodeTool(self.tool)
             file_service.create_workstateignore(tool)
 
-            self.console.print(
-                Text(f"\n✔ .workstateignore created for tool '{self.tool}' \n", style="bold green")
-            )
+            self.console.print(Text(f"\n✔ .workstateignore created for tool '{self.tool}' \n", style="bold green"))
 
         except ValueError as e:
             if "is not a valid CodeTool" in str(e):

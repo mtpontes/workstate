@@ -15,30 +15,19 @@ from rich.panel import Panel
 from rich.console import Console
 
 from src.utils import utils
+from src.constants.constants import BLANK
+from src.constants.constants import DEFAULT_AWS_REGION
 from src.api.commands.command import CommandI
-from src.constants.envs import DEFAULT_AWS_REGION
+from src.model.aws_credentials import AWSCredentials
 from src.services.config_service import ConfigService
-from src.constants.constants import ACCESS_KEY_ID, BLANK, BUCKET_NAME, REGION, SECRET_ACCESS_KEY
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
 class ConfigureCommandImpl(CommandI):
-    def __init__(
-        self,
-        console: Console,
-        credentials_validators,
-        interactive: bool,
-        access_key_id: str,
-        secret_access_key: str,
-        region: str,
-        bucket_name: str,
-    ) -> None:
+    def __init__(self, console: Console, interactive: bool, credentials: AWSCredentialsDTO) -> None:
         self.console = console
-        self.credentials_validators = credentials_validators
         self.interactive = interactive
-        self.access_key_id = access_key_id
-        self.secret_access_key = secret_access_key
-        self.region = region
-        self.bucket_name = bucket_name
+        self.credentials = credentials
 
     def execute(self) -> None:
         """
@@ -59,34 +48,26 @@ class ConfigureCommandImpl(CommandI):
         """
         self.console.print("[bold white]Workstate AWS Configuration[/bold white]\n")
 
-        if self.interactive or not all([self.access_key_id, self.secret_access_key, self.region, self.bucket_name]):
-            access_key_id, secret_access_key, region, bucket_name = self._prompt_credencials()
+        if self.interactive:
+            credentials: AWSCredentialsDTO = self._prompt_credencials()
 
-        credentials: dict = {
-            ACCESS_KEY_ID: access_key_id,
-            SECRET_ACCESS_KEY: secret_access_key,
-            REGION: region,
-            BUCKET_NAME: bucket_name,
-        }
-        results: list[str] = [key for key, value in credentials.items() if not value or not value.strip()]
-        if results:
-            results_str: str = "".join(["\n- " + credencial_key for credencial_key in results])
-            self.console.print(
-                utils.format_error_message(f"All credentials are required. Missing credencials: {results_str}")
-            )
-            raise typer.Exit(1)
+        self._validate_input(credentials)
 
-        ConfigService.save_aws_credentials(
-            access_key_id.strip(),
-            secret_access_key.strip(),
-            region.strip(),
-            bucket_name.strip(),
-        )
+        ConfigService.save_aws_credentials(credentials.to_aws_credentials_model())
 
         self.console.print(f"Configuration saved to: {ConfigService.CONFIG_FILE}")
         self.console.print("[green]✓ AWS credentials configured successfully![/green]\n")
 
-    def _prompt_credencials(self) -> tuple[str, str, str, str]:
+    def _validate_input(self, credentials):
+        results: list[str] = [key for key, value in credentials.__dict__.items() if not value or not value.strip()]
+        if results:
+            results_str: str = "".join(["\n- " + credencial_key for credencial_key in results])
+            self.console.print(
+                utils.format_error_message(f"All credentials are required. Missing credentials: {results_str}")
+            )
+            raise typer.Exit(1)
+
+    def _prompt_credencials(self) -> AWSCredentialsDTO:
         """
         Interactively prompts the user for AWS credentials and settings via the terminal.
 
@@ -103,15 +84,15 @@ class ConfigureCommandImpl(CommandI):
             tuple[str, str, str, str]: A tuple containing the provided or confirmed credentials:
             (access_key_id, secret_access_key, region, bucket_name)
         """
-        existing_config = ConfigService.get_aws_credentials() or {}
+        current_credentials: AWSCredentials = ConfigService.get_aws_credentials() or {}
 
         # Stylized banner
         title = Text("AWS Configuration Setup", style="bold blue")
         subtitle = Text("Configure your AWS credentials and settings", style="dim")
         self.console.print(Panel.fit(f"{title}\n{subtitle}", border_style="blue"))
 
-        if not self.access_key_id:
-            current_key = existing_config.get(ACCESS_KEY_ID, BLANK)
+        if not self.credentials.access_key_id:
+            current_key = current_credentials.access_key_id
             display_key = f"{current_key[:8]}..." if current_key else "Not configured"
 
             # Styled text before the prompt
@@ -124,8 +105,8 @@ class ConfigureCommandImpl(CommandI):
                 hide_input=False,
             )
 
-        if not self.secret_access_key:
-            current_secret = existing_config.get(SECRET_ACCESS_KEY, BLANK)
+        if not self.credentials.secret_access_key:
+            current_secret = current_credentials.secret_access_key
             display_secret = "***configured***" if current_secret else "Not configured"
 
             self.console.print("\n[bold cyan]AWS Secret Access Key[/bold cyan]")
@@ -137,8 +118,8 @@ class ConfigureCommandImpl(CommandI):
                 hide_input=True,
             )
 
-        if not self.region or self.region.strip() == BLANK:
-            current_region = existing_config.get(REGION, BLANK)
+        if not self.credentials.region or self.region.strip() == BLANK:
+            current_region = current_credentials.region
 
             self.console.print("\n[bold cyan]AWS Region[/bold cyan]")
             self.console.print(f"[dim]Current: {current_region or 'Not configured'}[/dim]")
@@ -149,8 +130,8 @@ class ConfigureCommandImpl(CommandI):
                 default=current_region if current_region else DEFAULT_AWS_REGION,
             )
 
-        if not self.bucket_name:
-            current_bucket = existing_config.get(BUCKET_NAME, BLANK)
+        if not self.credentials.bucket_name:
+            current_bucket = current_credentials.bucket_name
 
             self.console.print("\n[bold cyan]S3 Bucket Name[/bold cyan]")
             self.console.print(f"[dim]Current: {current_bucket or 'Not configured'}[/dim]")
@@ -168,4 +149,4 @@ class ConfigureCommandImpl(CommandI):
         self.console.print(f"[cyan]Region:[/cyan] {region}")
         self.console.print(f"[cyan]Bucket:[/cyan] {bucket_name}")
 
-        return (access_key_id, secret_access_key, region, bucket_name)
+        return AWSCredentialsDTO(access_key_id, secret_access_key, region, bucket_name)

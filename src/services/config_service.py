@@ -17,13 +17,10 @@ import json
 from pathlib import Path
 from typing import Optional, Dict, Any
 
+from src.model.aws_credentials import AWSCredentials
 from src.constants.constants import (
-    ACCESS_KEY_ID,
     AWS,
-    BUCKET_NAME,
     READ_OPERATOR,
-    REGION,
-    SECRET_ACCESS_KEY,
     WRITE_OPERATOR,
 )
 
@@ -39,18 +36,6 @@ class ConfigService:
     CONFIG_FILE = CONFIG_DIR / "config.json"
 
     @classmethod
-    def save_config(cls, config: Dict[str, Any]) -> None:
-        """Saves configuration to the config file
-
-        Args:
-            config (Dict[str, Any]): Configuration dictionary to save
-        """
-        cls.ensure_config_dir_exists()
-
-        with open(cls.CONFIG_FILE, WRITE_OPERATOR) as f:
-            json.dump(config, f, indent=2)
-
-    @classmethod
     def ensure_config_dir_exists(cls) -> None:
         """Creates the config directory if it doesn't exist"""
         cls.CONFIG_DIR.mkdir(exist_ok=True)
@@ -62,24 +47,15 @@ class ConfigService:
         Returns:
             Optional[Dict[str, str]]: AWS credentials or None if not configured
         """
-        config = cls.load_config()
-        aws_config = config.get(AWS, {})
+        config: dict = cls.load_config()
+        aws_config: dict = config.get(AWS, {})
 
-        required_keys = [ACCESS_KEY_ID, SECRET_ACCESS_KEY, REGION, BUCKET_NAME]
-        if all(key in aws_config for key in required_keys):
-            return {
-                ACCESS_KEY_ID: aws_config[ACCESS_KEY_ID],
-                SECRET_ACCESS_KEY: aws_config[SECRET_ACCESS_KEY],
-                REGION: aws_config[REGION],
-                BUCKET_NAME: aws_config[BUCKET_NAME],
-            }
-
-        return None
+        return AWSCredentials(**aws_config)
 
     @classmethod
-    def save_aws_credentials(cls, access_key_id: str, secret_access_key: str, region: str, bucket_name: str) -> None:
+    def save_aws_credentials(cls, credentials: AWSCredentials) -> None:
         """
-        Saves AWS credentials to config
+        Saves AWS credentials to file config.json
 
         Args:
             access_key_id (str): AWS Access Key ID
@@ -87,16 +63,12 @@ class ConfigService:
             region (str): AWS Region
             bucket_name (str): S3 Bucket name
         """
-        config = cls.load_config()
+        config_file_content: dict[str, any] = cls.load_config()
+        config_file_content[AWS] = credentials.__dict__
+        cls.ensure_config_dir_exists()
 
-        config[AWS] = {
-            ACCESS_KEY_ID: access_key_id,
-            SECRET_ACCESS_KEY: secret_access_key,
-            REGION: region,
-            BUCKET_NAME: bucket_name,
-        }
-
-        cls.save_config(config)
+        with open(cls.CONFIG_FILE, WRITE_OPERATOR) as f:
+            json.dump(config_file_content, f, indent=2)
 
     @classmethod
     def load_config(cls) -> Dict[str, Any]:

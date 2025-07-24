@@ -48,11 +48,10 @@ from src.api.commands.download_command import DownloadCommandImpl
 from src.clients import s3_client
 from src.services import state_service
 from src.templates.code_tool import CodeTool
-from src.validators import credentials_validators
 from src.constants.messages import VALID_CODE_TOOLS_OPTIONS
 from src.services import file_service
 from src.utils import utils
-from src.utils.logs import log
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
 # Main instance of the Typer application
@@ -267,9 +266,11 @@ def configure_aws(
         - Use AWS IAM best practices for credential management
     """
     try:
-        ConfigureCommandImpl(
-            console, credentials_validators, interactive, access_key_id, secret_access_key, region, bucket_name
-        ).execute()
+        print(access_key_id, secret_access_key, bucket_name, region)
+        credentials = AWSCredentialsDTO(
+            access_key_id=access_key_id, secret_access_key=secret_access_key, bucket_name=bucket_name, region=region
+        )
+        ConfigureCommandImpl(console, interactive, credentials).execute()
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Configuration cancelled by user[/yellow]")
@@ -305,6 +306,6 @@ def show_config() -> None:
 
 
 def _handle_error(e):
-    utils.format_error_message(e)
-    log.error("An unexpected error ocurred: %s", e)
+    message: str = utils.format_error_message(e)
+    console.print(message)
     raise typer.Exit(1)

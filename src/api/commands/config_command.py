@@ -21,8 +21,9 @@ from rich.panel import Panel
 from rich.console import Console
 
 from src.api.commands.command import CommandI
+from src.model.aws_credentials import AWSCredentials
 from src.services.config_service import ConfigService
-from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, REGION
+from src.constants.constants import DATE_PATTERN
 
 
 class ConfigCommandImpl(CommandI):
@@ -31,7 +32,7 @@ class ConfigCommandImpl(CommandI):
 
     def execute(self) -> None:
         try:
-            credentials = ConfigService.get_aws_credentials()
+            credentials: AWSCredentials = ConfigService.get_aws_credentials()
             if credentials:
                 self._show_current_configurations(credentials)
             else:
@@ -41,7 +42,7 @@ class ConfigCommandImpl(CommandI):
             self._show_config_error(e)
             raise typer.Exit(1)
 
-    def _show_current_configurations(self, credentials: dict) -> None:
+    def _show_current_configurations(self, credentials: AWSCredentials) -> None:
         """
         Displays the current AWS settings that are properly configured.
 
@@ -61,12 +62,12 @@ class ConfigCommandImpl(CommandI):
         table.add_column("Status", justify="center", width=12)
 
         # Mask access key
-        masked_key = f"{credentials[ACCESS_KEY_ID][:8]}***"
+        masked_key = f"{credentials.access_key_id[:8]}***"
 
         # Add lines to the table
         table.add_row("Access Key ID", masked_key, "[green]✓[/green]")
-        table.add_row("Region", credentials[REGION], "[green]✓[/green]")
-        table.add_row("Bucket Name", credentials[BUCKET_NAME], "[green]✓[/green]")
+        table.add_row("Region", credentials.region, "[green]✓[/green]")
+        table.add_row("Bucket Name", credentials.bucket_name, "[green]✓[/green]")
 
         self.console.print(table)
 
@@ -134,7 +135,7 @@ class ConfigCommandImpl(CommandI):
             path = Path(config_file)
             if path.exists():
                 timestamp = path.stat().st_mtime
-                return datetime.fromtimestamp(timestamp).astimezone().strftime("%Y-%m-%d %H:%M:%S")
+                return datetime.fromtimestamp(timestamp).astimezone().strftime(DATE_PATTERN)
             else:
                 return "File not found"
         except Exception:
