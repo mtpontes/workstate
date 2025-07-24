@@ -10,3 +10,4 @@ pyproject.*
 LICENSE
 README.md
 main.py
+logs/

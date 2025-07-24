@@ -35,15 +35,30 @@ O Workstate é projetado para capturar tudo que o controle de versão tradiciona
 - **Configurações Locais**: Configurações específicas de ferramentas e preferências
 - **Dados de Desenvolvimento**: Dados de teste, arquivos mock, assets locais
 
-## 🔧 Instalação
+<details>
+  <summary><h2>🔧 Instalação</h2></summary>
+
+Se você for utilizar o `workstate.exe` ignore esse tópico.
 
 ### Pré-requisitos
 
-- Python 3.8 ou superior
+- Python 3.8+
 - Conta AWS com acesso ao S3
-- pip (instalador de pacotes Python)
+- pip
 
-### Instalar do Código-fonte
+### Dependências
+
+- **typer**: Framework para CLIs
+- **rich**: Formatação de terminal
+- **boto3**: SDK AWS para Python
+
+### Arquivos de Configuração
+
+- **`.workstateignore`**: Define arquivos/diretórios a serem incluídos/excluídos
+- **`~/.workstate/config.json`**: Armazena credenciais AWS
+
+
+### Instalar do Código-fonte (somente via Python)
 
 ```bash
 git clone https://github.com/seuusuario/workstate.git
@@ -51,7 +66,11 @@ cd workstate
 pip install -r requirements.txt
 ```
 
-## ⚙️ Configuração AWS e Permissões
+</details>
+
+
+<details>
+  <summary><h2>⚙️ Configuração AWS e Permissões</h2></summary>
 
 ### 1. Criar uma Conta AWS
 
@@ -97,13 +116,15 @@ Se você não tem uma conta AWS, crie uma em [aws.amazon.com](https://aws.amazon
 2. Crie um novo bucket com um nome único (ex: `meu-bucket-workstate-12345`)
 3. Escolha sua região preferida
 4. Mantenha as configurações padrão de segurança
+</details>
 
-## 🎯 Início Rápido
+<details>
+  <summary><h2>🎯 Início Rápido</h2></summary>
 
 ### 1. Configurar Credenciais AWS
 
 ```bash
-python main.py configure
+workstate configure
 ```
 
 Isso solicitará:
@@ -114,17 +135,17 @@ Isso solicitará:
 
 Configuração não-interativa alternativa:
 ```bash
-python main.py configure --access-key-id AKIA... --secret-access-key xxx --region us-east-1 --bucket-name meu-bucket --no-interactive
+workstate configure --access-key-id AKIA... --secret-access-key xxx --region us-east-1 --bucket-name meu-bucket --no-interactive
 ```
 
 ### 2. Inicializar Seu Projeto
 
 ```bash
 # Inicializar com um template específico
-python main.py init --tool python
+workstate init --tool python
 
 # Ou usar o template padrão
-python main.py init
+workstate init
 ```
 
 Isso cria um arquivo `.workstateignore` otimizado para sua stack de desenvolvimento.
@@ -132,7 +153,7 @@ Isso cria um arquivo `.workstateignore` otimizado para sua stack de desenvolvime
 ### 3. Verificar O Que Será Salvo
 
 ```bash
-python main.py status
+workstate status
 ```
 
 Isso mostra todos os arquivos e diretórios que serão incluídos no snapshot do seu estado.
@@ -140,14 +161,14 @@ Isso mostra todos os arquivos e diretórios que serão incluídos no snapshot do
 ### 4. Salvar Seu Estado Atual
 
 ```bash
-python main.py save "meu-projeto-v1"
+workstate save "meu-projeto-v1"
 ```
 Isso compacta todos os arquivos mapeados (os mesmos listados no comando de status) em .zip e carrega para o AWS S3.
 
 ### 5. Listar Estados Disponíveis
 
 ```bash
-python main.py list
+workstate list
 ```
 Lista todos os zips no AWS S3 do Workstate.
 
@@ -155,134 +176,129 @@ Lista todos os zips no AWS S3 do Workstate.
 Baixa um estado e descompacta localmente. Caso haja repetição de arquivos, os arquivos repetidos do zip serão salvos 
 como duplicatas seguindo o padrão (numero_da_duplicata), por exemplo: arquivo.txt, arquivo (1).txt, arquivo (2).txt.
 ```bash
-python main.py download
+workstate download
 ```
 Caso queira apenas baixar o estado sem restaura-lo diretamente, use a opção `--download-only`, o zip será baixado e 
 armazenado numa pasta `downloads` no diretório atual.
 ```bash
-python main.py download --download-only
+workstate download --download-only
 ```
+</details>
 
 
-## 📖 Referência de Comandos
+<details>
+  <summary><h2>📖 Referência de Comandos</h2></summary>
 
-### `init` - Inicializar Projeto
+### Comandos Disponíveis
 
-Cria um arquivo `.workstateignore` com um template otimizado para sua ferramenta de desenvolvimento.
+| Comando | Descrição | Argumentos | Opções |
+|---------|-----------|------------|--------|
+| `init` | Inicializa um novo projeto Workstate com arquivo `.workstateignore` | - | `--tool, -t`: Tipo de ferramenta (padrão: `generic`) |
+| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | - |
+| `list` | Lista todos os estados disponíveis no AWS S3 | - | - |
+| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`: Apenas baixa sem extrair |
+| `status` | Mostra arquivos rastreados pelo Workstate | - | - |
+| `configure` | Configura credenciais AWS | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
+| `config` | Exibe configuração atual do Workstate | - | - |
 
+### Detalhamento dos Comandos
+
+### `init`
+**Funcionalidade:** Cria arquivo `.workstateignore` com template otimizado para a ferramenta especificada.
+
+**Ferramentas válidas:** `python`, `node`, `java`, `go`, `generic`
+
+**Exemplos:**
 ```bash
-python main.py init [OPÇÕES]
+workstate init --tool python
+workstate init -t node
+workstate init  # usa template generic
 ```
+
+### `save`
+**Funcionalidade:** Comprime arquivos selecionados e faz upload para S3.
+
+**Processo:**
+1. Analisa `.workstateignore`
+2. Cria ZIP temporário
+3. Upload para S3
+4. Remove arquivo temporário
+
+**Exemplos:**
+```bash
+workstate save my-django-project
+workstate save "projeto com espaços"
+```
+
+### `list`
+**Funcionalidade:** Lista estados salvos no S3 com informações detalhadas.
+
+**Informações exibidas:**
+- Nome do arquivo
+- Tamanho
+- Data de modificação
+- Ordenação por data (mais recente primeiro)
+
+### `download`
+**Funcionalidade:** Interface interativa para restaurar estados salvos.
+
+**Processo:**
+1. Lista estados disponíveis
+2. Seleção interativa
+3. Download do ZIP
+4. Extração (opcional)
+5. Limpeza de arquivos temporários
 
 **Opções:**
-- `--tool, -t`: Tipo de ferramenta de desenvolvimento (padrão: `default`)
-- **Ferramentas válidas**: `python`, `node`, `react`, `angular`, `java`, `c`, `c++`, `c#`, `php`, `default`
+| Opção | Descrição |
+|-------|-----------|
+| `--only-download` | Baixa apenas o ZIP sem extrair |
 
-**Exemplos:**
-```bash
-python main.py init --tool python
-python main.py init -t node
-python main.py init  # usa template padrão
-```
+### `status`
+**Funcionalidade:** Visualiza arquivos que serão incluídos no próximo backup.
 
-### `save` - Salvar Estado Atual
-
-Cria um snapshot comprimido do seu ambiente de desenvolvimento e o carrega no S3.
-
-```bash
-python main.py save <NOME_DO_ESTADO>
-```
-
-**Argumentos:**
-- `NOME_DO_ESTADO`: Identificador único para o snapshot do seu estado
-
-**Exemplos:**
-```bash
-python main.py save "feature-autenticacao-usuario"
-python main.py save "antes-refatoracao"
-python main.py save "hotfix-producao"
-```
-
-### `list` - Listar Estados Disponíveis
-
-Mostra todos os estados salvos no seu bucket S3 com detalhes.
-
-```bash
-python main.py list
-```
-
-**Saída inclui:**
-- Nome do estado
-- Tamanho do arquivo
-- Data da última modificação
-- Ordenado por data de modificação (mais recente primeiro)
-
-### `download` - Restaurar Estado
-
-Restauração interativa de um estado de desenvolvimento salvo.
-
-```bash
-python main.py download [OPÇÕES]
-```
-
-**Opções:**
-- `--only-download`: Baixar o arquivo ZIP sem extraí-lo
-
-**Exemplos:**
-```bash
-python main.py download                    # Restauração interativa
-python main.py download --only-download    # Apenas baixar
-```
-
-### `status` - Mostrar Arquivos Rastreados
-
-Exibe todos os arquivos e diretórios que serão incluídos na próxima operação de salvamento.
-
-```bash
-python main.py status
-```
-
-**Saída inclui:**
+**Informações exibidas:**
 - Caminhos de arquivos/diretórios
-- Tamanhos de arquivos individuais
-- Contagem total e tamanho
+- Tamanhos individuais
+- Total de arquivos e tamanho
 
-### `configure` - Configuração AWS
-
-Configurar ou atualizar credenciais AWS para o Workstate.
-
-```bash
-python main.py configure [OPÇÕES]
-```
+### `configure`
+**Funcionalidade:** Configura credenciais AWS (armazenadas em `~/.workstate/config.json`).
 
 **Opções:**
-- `--access-key-id, -a`: AWS Access Key ID
-- `--secret-access-key, -s`: AWS Secret Access Key  
-- `--region, -r`: Região AWS
-- `--bucket-name, -b`: Nome do bucket S3
-- `--interactive/--no-interactive, -i`: Usar modo interativo (padrão: true)
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--access-key-id` | `-a` | AWS Access Key ID |
+| `--secret-access-key` | `-s` | AWS Secret Access Key |
+| `--region` | `-r` | Região AWS (ex: us-east-1, sa-east-1) |
+| `--bucket-name` | `-b` | Nome do bucket S3 |
+| `--interactive` | `-i` | Modo interativo (padrão: true) |
 
 **Exemplos:**
 ```bash
-# Modo interativo (padrão)
-python main.py configure
+# Modo interativo
+workstate configure
 
 # Modo não-interativo
-python main.py configure --access-key-id AKIA... --secret-access-key xxx --region us-east-1 --bucket-name meu-bucket --no-interactive
+workstate configure --access-key-id AKIA... --secret-access-key xxx --region us-east-1 --bucket-name my-bucket
 
-# Modo misto (alguns argumentos fornecidos)
-python main.py configure --region sa-east-1 --bucket-name meu-bucket-workstate
+# Modo misto
+workstate configure --region sa-east-1 --bucket-name my-workstate-bucket
 ```
 
-### `config` - Mostrar Configuração Atual
+### `config`
+**Funcionalidade:** Exibe configuração AWS atual sem revelar informações sensíveis.
 
-Exibe a configuração AWS atual (sem revelar informações sensíveis).
+**Informações exibidas:**
+- Access Key ID (mascarado)
+- Região AWS
+- Nome do bucket
+- Status da configuração
 
-```bash
-python main.py config
-```
+</details>
 
-## 📁 Arquivo .workstateignore
+<details>
+  <summary><h2>📁 Arquivo .workstateignore</h2></summary>
 
 O arquivo `.workstateignore` funciona de forma similar ao `.gitignore`, mas define o que **deve ser incluído** no snapshot do seu estado. Ele suporta:
 
@@ -320,6 +336,8 @@ config/local.json
 /test_data/
 ```
 
+</details>
+
 ## 🔐 Considerações de Segurança
 
 ### Armazenamento de Credenciais
@@ -340,21 +358,6 @@ config/local.json
 - Audite regularmente estados salvos e remova os desnecessários
 - Seja consciente sobre dados sensíveis no seu ambiente de desenvolvimento
 
-## 🌍 Variáveis de Ambiente
-
-O Workstate suporta configuração via variáveis de ambiente como alternativa à configuração interativa:
-
-```bash
-# Credenciais AWS obrigatórias
-export WORKSTATE_AWS_ACCESS_KEY_ID="sua-chave-de-acesso"
-export WORKSTATE_AWS_SECRET_ACCESS_KEY="sua-chave-secreta"
-export WORK_STATE_AWS_REGION="us-east-1"
-export WORKSTATE_S3_BUCKET_NAME="nome-do-seu-bucket"
-
-# Nomes alternativos de credenciais AWS (também suportados)
-export AWS_ACCESS_KEY_ID="sua-chave-de-acesso"  
-export AWS_SECRET_ACCESS_KEY="sua-chave-secreta"
-```
 
 ## ⚠️ Notas Importantes
 
@@ -388,17 +391,17 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 - Certifique-se de que o bucket S3 existe e está acessível
 
 **"Arquivo .workstateignore não encontrado":**
-- Execute `python main.py init` para criar um
+- Execute `workstate init` para criar um
 - Certifique-se de estar no diretório correto do projeto
 
 **Tempos de upload longos:**
 - Verifique seu arquivo `.workstateignore` para arquivos grandes desnecessários
 - Considere a velocidade da sua conexão com a internet
-- Use `python main.py status` para revisar o que está sendo carregado
+- Use `workstate status` para revisar o que está sendo carregado
 
 **Problemas de configuração:**
-- Use `python main.py config` para verificar suas configurações atuais
-- Re-execute `python main.py configure` para atualizar credenciais
+- Use `workstate config` para verificar suas configurações atuais
+- Re-execute `workstate configure` para atualizar credenciais
 
 ---
 
