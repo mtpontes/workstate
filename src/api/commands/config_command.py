@@ -120,7 +120,7 @@ def _get_config_last_modified(config_file: str) -> str:
         path = Path(config_file)
         if path.exists():
             timestamp = path.stat().st_mtime
-            return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
+            return datetime.fromtimestamp(timestamp).astimezone().strftime("%Y-%m-%d %H:%M:%S")
         else:
             return "File not found"
     except Exception:
