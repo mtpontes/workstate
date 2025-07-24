@@ -25,3 +25,10 @@ def format_file_size(size_bytes: int) -> str:
             return f"{size:.1f} {unit}"
         size /= 1024
     return f"{size:.1f} PB"
+
+
+def format_error_message(message: str = "Unexpected error", error: Exception = None) -> str:
+    if error is None:
+        return f"[red] Error: {message} [/red]"
+    else:
+        return f"[red] Error: {message}: [/red] {error}"

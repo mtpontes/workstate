@@ -35,31 +35,29 @@ Example of use:
 Author: mtpontes
 """
 
-from pathlib import Path
-
 import typer
-from rich.text import Text
-from mypy_boto3_s3.service_resource import ObjectSummary
+from rich.console import Console
 
-from src.utils import utils
+from src.api.commands.config_command import ConfigCommandImpl
+from src.api.commands.configure_command import ConfigureCommandImpl
+from src.api.commands.save_command import SaveCommandImpl
+from src.api.commands.status_command import StatusCommandImpl
+from src.api.commands.list_command import ListCommandImpl
+from src.api.commands.init_command import InitCommandImpl
+from src.api.commands.download_command import DownloadCommandImpl
 from src.clients import s3_client
 from src.services import state_service
 from src.templates.code_tool import CodeTool
 from src.validators import credentials_validators
-from src.services.config_service import ConfigService
 from src.constants.messages import VALID_CODE_TOOLS_OPTIONS
-from src.services import console_service, file_service
-from src.api.commands import (
-    config_command,
-    configure_command,
-    download_command,
-    list_command,
-    status_command,
-)
+from src.services import file_service
+from src.utils import utils
+from src.utils.logs import log
 
 
 # Main instance of the Typer application
 app = typer.Typer(name="workstate", help="Portable development environment management tool", add_completion=False)
+console = Console()
 
 
 @app.command("init", help="Initializes a new Workstate project with .workstateignore file template")
@@ -87,17 +85,9 @@ def init(tool: str = typer.Option(CodeTool.DEFAULT.value, "--tool", "-t", help=V
         - The template can be manually edited after creation.
     """
     try:
-        tool: CodeTool = CodeTool(tool)
-        file_service.create_workstateignore(tool)
+        InitCommandImpl(tool, console, file_service).execute()
     except Exception as e:
-        if isinstance(e, ValueError) and "is not a valid CodeTool" in str(e):
-            message = Text()
-            message.append("Error: Invalid tool. Use one of the valid options: ", style="red")
-            message.append(CodeTool.get_valid_values(), style="bold magenta")
-            console_service.print_message(message)
-        else:
-            console_service.print_error("Unexpected error:", e)
-        raise typer.Exit(1)
+        _handle_error(e)
 
 
 @app.command("list", help="Lists all project states available in AWS S3")
@@ -125,12 +115,9 @@ def list_state_zips() -> None:
         - List is sorted by modification date (most recent first)
     """
     try:
-        s3_objects: list[ObjectSummary] = s3_client.list_objects()
-        zip_files: list[ObjectSummary] = state_service.filter_zip_files(s3_objects)
-        list_command.print_zip_list(zip_files)
+        ListCommandImpl(console, s3_client, state_service).execute()
     except Exception as e:
-        console_service.print_message(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(1)
+        _handle_error(e)
 
 
 @app.command("download", help="Restores a saved project state from AWS S3")
@@ -166,26 +153,9 @@ def download_state(
         - Preserves the project's original directory structure
     """
     try:
-        s3_objects: list[ObjectSummary] = s3_client.list_objects()
-        zip_files: list[ObjectSummary] = state_service.filter_zip_files(s3_objects)
-        if not zip_files:
-            console_service.print_message("[yellow]No ZIP files found in the S3 bucket.[/yellow]")
-            raise typer.Exit(0)
-
-        selected_zip_file: str = download_command.select_zip_file(zip_files)
-        zip_file: Path = state_service.download_zip_file(selected_zip_file)
-        console_service.print_message(f"[green]Downloaded:[/green] {zip_file}")
-
-        if not only_download:
-            file_service.unzip(zip_file)
-            zip_file.unlink()
-            console_service.print_message("[green]State restored successfully.[/green]")
-        else:
-            console_service.print_message("[blue]Only downloaded file. Skipped unpacking.[/blue]")
-
+        DownloadCommandImpl(only_download, console, s3_client, state_service).execute()
     except Exception as e:
-        console_service.print_message(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(1)
+        _handle_error(e)
 
 
 @app.command("save", help="Saves the current state of the project to AWS S3")
@@ -215,14 +185,10 @@ def save_state(state_name: str) -> None:
         - Temporary files are automatically cleaned in case of error
     """
     try:
-        files_to_save: list[Path] = file_service.select_files()
-        temporary_zip_file: Path = file_service.zip_files(files_to_save)
-        zip_file_name: str = utils.define_zip_file_name(state_name)
-        s3_client.save_zip_file(temporary_zip_file, zip_file_name)
-        temporary_zip_file.unlink()
+        SaveCommandImpl(state_name, console, s3_client, file_service, state_service).execute()
+
     except Exception as e:
-        console_service.print_message(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(1)
+        _handle_error(e)
 
 
 @app.command("status", help="Displays detailed status of files tracked by Workstate")
@@ -257,11 +223,9 @@ def status() -> None:
         - Sizes are recursively calculated for directories
     """
     try:
-        files_to_save: list[Path] = file_service.select_files()
-        status_command.print_status(files_to_save)
+        StatusCommandImpl(console, file_service).execute()
     except Exception as e:
-        console_service.print_message(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(1)
+        _handle_error(e)
 
 
 @app.command("configure", help="Configure AWS credentials for Workstate")
@@ -303,37 +267,15 @@ def configure_aws(
         - Use AWS IAM best practices for credential management
     """
     try:
-        console_service.print_message("[bold white]Workstate AWS Configuration[/bold white]\n")
-
-        if interactive or not all([access_key_id, secret_access_key, region, bucket_name]):
-            access_key_id, secret_access_key, region, bucket_name = configure_command.prompt_credencials(
-                access_key_id, secret_access_key, region, bucket_name
-            )
-
-        results: list[str] = credentials_validators.validate_credentials(
-            access_key_id, secret_access_key, region, bucket_name
-        )
-        if results:
-            results_str: str = "".join(["\n- " + credencial_key for credencial_key in results])
-            console_service.print_error(f"All credentials are required. Missing credencials: {results_str}")
-            raise typer.Exit(1)
-
-        ConfigService.save_aws_credentials(
-            access_key_id.strip(),
-            secret_access_key.strip(),
-            region.strip(),
-            bucket_name.strip(),
-        )
-
-        console_service.print_message(f"Configuration saved to: {ConfigService.CONFIG_FILE}")
-        console_service.print_message("[green]✓ AWS credentials configured successfully![/green]\n")
+        ConfigureCommandImpl(
+            console, credentials_validators, interactive, access_key_id, secret_access_key, region, bucket_name
+        ).execute()
 
     except KeyboardInterrupt:
-        console_service.print_message("\n[yellow]Configuration cancelled by user[/yellow]")
+        console.print("\n[yellow]Configuration cancelled by user[/yellow]")
         raise typer.Exit(0)
     except Exception as e:
-        console_service.print_message(f"[red]Unexpected error:[/red] {e}")
-        raise typer.Exit(1)
+        _handle_error(e)
 
 
 @app.command("config", help="Show current Workstate configuration")
@@ -356,13 +298,13 @@ def show_config() -> None:
         ```
     """
     try:
-        credentials = ConfigService.get_aws_credentials()
-
-        if credentials:
-            config_command.show_current_configurations(credentials)
-        else:
-            config_command.show_configuration_status()
+        ConfigCommandImpl(console).execute()
 
     except Exception as e:
-        config_command.show_config_error(e)
-        raise typer.Exit(1)
+        _handle_error(e)
+
+
+def _handle_error(e):
+    utils.format_error_message(e)
+    log.error("An unexpected error ocurred: %s", e)
+    raise typer.Exit(1)
