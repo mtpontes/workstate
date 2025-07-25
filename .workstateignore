@@ -11,3 +11,6 @@ LICENSE
 README.md
 main.py
 logs/
+build/
+dist/
+**.exe

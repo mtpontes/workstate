@@ -9,7 +9,7 @@ if getattr(sys, "frozen", False):
     BASE_DIR = Path(sys.executable).parent
 else:
     # When running as a regular .py script
-    BASE_DIR = Path(__file__).parent
+    BASE_DIR = Path.cwd()
 
 # Create the logs folder relative to the executable or script location
 LOG_DIR = BASE_DIR / "logs"
