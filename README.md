@@ -300,9 +300,10 @@ workstate configure --region sa-east-1 --bucket-name my-workstate-bucket
 <details>
   <summary><h2>📁 Arquivo .workstateignore</h2></summary>
 
-O arquivo `.workstateignore` funciona de forma similar ao `.gitignore`, mas define o que **deve ser incluído** no snapshot do seu estado. Ele suporta:
+O arquivo `.workstateignore` funciona de forma similar ao `.gitignore`, mas define o que **ignorado** no snapshot do seu estado.
+A ideia é ignorar tudo que for referente ao repositório. Ele suporta:
 
-- **Padrões glob**: `*.env`, `config/*`
+- **Padrões glob**: `*.env`, `config/*`, `!.jar`
 - **Inclusão de diretórios**: `/.vscode/`
 - **Arquivos específicos**: `database.sqlite3`
 - **Comentários**: Linhas começando com `#`

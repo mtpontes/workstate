@@ -52,7 +52,6 @@ def select_files() -> list[Path]:
         list[Path]: List of files to be considered.
     """
     root = Path.cwd().resolve()
-
     all_files = [path for path in root.rglob("*") if path.is_file()]
 
     ignore_file = root / IGNORE_FILE
@@ -61,7 +60,7 @@ def select_files() -> list[Path]:
         spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
         # Filters ignored files
         ignored = set(root / p for p in spec.match_tree(root))
-        files = [f for f in all_files if f not in ignored]
+        files = [file for file in all_files if file not in ignored]
     else:
         log.warning("No %s file found. All files will be selected.", IGNORE_FILE)
         files = all_files
