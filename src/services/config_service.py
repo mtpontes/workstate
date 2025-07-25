@@ -15,8 +15,9 @@ Class:
 
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 from src.model.aws_credentials import AWSCredentials
 from src.constants.constants import (
     AWS,
@@ -36,21 +37,14 @@ class ConfigService:
     CONFIG_FILE = CONFIG_DIR / "config.json"
 
     @classmethod
-    def ensure_config_dir_exists(cls) -> None:
-        """Creates the config directory if it doesn't exist"""
-        cls.CONFIG_DIR.mkdir(exist_ok=True)
-
-    @classmethod
-    def get_aws_credentials(cls) -> Optional[Dict[str, str]]:
+    def get_aws_credentials(cls) -> AWSCredentialsDTO:
         """Gets AWS credentials from config
 
         Returns:
-            Optional[Dict[str, str]]: AWS credentials or None if not configured
+            AWSCredentialsDTO: AWS credentials or None if not configured
         """
         config: dict = cls.load_config()
-        aws_config: dict = config.get(AWS, {})
-
-        return AWSCredentials(**aws_config)
+        return AWSCredentialsDTO(**config.get(AWS, {}))
 
     @classmethod
     def save_aws_credentials(cls, credentials: AWSCredentials) -> None:
@@ -85,11 +79,6 @@ class ConfigService:
             return json.load(f)
 
     @classmethod
-    def has_aws_credentials(cls) -> bool:
-        """
-        Checks if AWS credentials are configured
-
-        Returns:
-            bool: True if credentials are configured, False otherwise
-        """
-        return cls.get_aws_credentials() is not None
+    def ensure_config_dir_exists(cls) -> None:
+        """Creates the config directory if it doesn't exist"""
+        cls.CONFIG_DIR.mkdir(exist_ok=True)

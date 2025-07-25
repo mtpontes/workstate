@@ -89,144 +89,6 @@ def init(tool: str = typer.Option(CodeTool.DEFAULT.value, "--tool", "-t", help=V
         _handle_error(e)
 
 
-@app.command("list", help="Lists all project states available in AWS S3")
-def list_state_zips() -> None:
-    """Lists all project states available in AWS S3
-
-    Connects to the configured S3 bucket and retrieves a list of all
-    previously saved state ZIP files. Displays information such as
-    file name, size, and modification date in tabular format.
-
-    Examples:
-        ```bash
-        $ workstate list
-        ┌─────────────────────────┬──────────┬─────────────────────┐
-        │ Name                    │ Size     │ Last Modified       │
-        ├─────────────────────────┼──────────┼─────────────────────┤
-        │ my-project-2025.zip     │ 15.2 MB  │ 2025-01-15 14:30:00 │
-        │ other-project-2025.zip  │ 8.7 MB   │ 2025-01-14 09:15:22 │
-        └─────────────────────────┴──────────┴─────────────────────┘
-        ```
-
-    Notes:
-        - Only files with a .zip extension are displayed
-        - Requires valid AWS credentials
-        - List is sorted by modification date (most recent first)
-    """
-    try:
-        ListCommandImpl(console, s3_client, state_service).execute()
-    except Exception as e:
-        _handle_error(e)
-
-
-@app.command("download", help="Restores a saved project state from AWS S3")
-def download_state(
-    only_download: bool = typer.Option(False, "--only-download", help="Only downloads the state, without unpacking it"),
-) -> None:
-    """Restores a saved project state from AWS S3
-
-    An interactive restore process that:
-    1. Lists all available states in S3
-    2. Allows interactive selection of the desired state
-    3. Downloads the selected ZIP file
-    4. Unzips the files in the current directory
-    5. Removes the temporary ZIP file
-
-    Examples:
-        ```bash
-        $ workstate download
-        ? Select a zip file to download: Use ↑/↓ to navigate and Enter to select
-        ❯ my-project-2024-01-15.zip               | Size: 14.3 KB    | Last Modified: 2024-01-15 12:34:56
-          other-project-2024-01-14.zip            | Size: 10.3 KB    | Last Modified: 2024-01-15 12:34:56
-          old-project-2024-01-10.zip              | Size: 1.1 KB     | Last Modified: 2024-01-15 12:34:56
-        ```
-
-    Warning:
-        - Existing files may be overwritten during unpacking.
-        - It is recommended to back up the current state before restoring.
-        - This operation cannot be undone automatically.
-
-    Notes:
-        - Interactive interface using keyboard arrows for selection
-        - Displays detailed file information before confirmation
-        - Preserves the project's original directory structure
-    """
-    try:
-        DownloadCommandImpl(only_download, console, s3_client, state_service).execute()
-    except Exception as e:
-        _handle_error(e)
-
-
-@app.command("save", help="Saves the current state of the project to AWS S3")
-def save_state(state_name: str) -> None:
-    """Saves the current state of the project to AWS S3
-
-    Performs the complete development environment backup process:
-    1. Analyzes the .workstateignore file to determine included files
-    2. Creates a temporary ZIP file with the selected files
-    3. Uploads the ZIP file to the configured S3 bucket
-    4. Removes the local temporary file
-
-    Args:
-        state_name (str): Unique identifier name for the project state.
-            This will be the name of the ZIP file on S3.
-
-    Examples:
-        ```bash
-        $ workstate save my-django-project
-        $ workstate save "project with spaces"
-        ```
-
-    Notes:
-        - Requires .workstateignore file valid in the current directory
-        - Project name is sanitized for compatibility S3
-        - Timestamp is automatically added to the final name of the file
-        - Temporary files are automatically cleaned in case of error
-    """
-    try:
-        SaveCommandImpl(state_name, console, s3_client, file_service, state_service).execute()
-
-    except Exception as e:
-        _handle_error(e)
-
-
-@app.command("status", help="Displays detailed status of files tracked by Workstate")
-def status() -> None:
-    """Displays detailed status of files tracked by Workstate.
-
-    Analyzes the current .workstateignore file and displays a complete list
-    of all files and directories that will be included in the next
-    backup. Useful for validating exclusion rules before executing
-    the save command.
-
-    Examples:
-        ```bash
-        $ workstate status
-                            Files to save
-        ┌────────────────────────────────────────────┬───────┐
-        │ File/Directory                             │ Size  │
-        ├────────────────────────────────────────────┼───────┤
-        │ src/main.py                                │ 2.1KB │
-        │ config/settings.json                       │ 0.8KB │
-        │ requirements.txt                           │ 0.3KB │
-        │ ultralight_file.txt                        │     - │
-        └────────────────────────────────────────────┴───────┘
-        Total: 127 files (45.2 MB)
-        ```
-
-    Notes:
-        - Requires .workstateignore file valid in the current directory
-        - Does not perform modification operations, only consultation
-        - Useful for complex exclusion rules
-        - Shows both files and directories that will be included
-        - Sizes are recursively calculated for directories
-    """
-    try:
-        StatusCommandImpl(console, file_service).execute()
-    except Exception as e:
-        _handle_error(e)
-
-
 @app.command("configure", help="Configure AWS credentials for Workstate")
 def configure_aws(
     access_key_id: str = typer.Option(None, "--access-key-id", "-a", help="AWS Access Key ID"),
@@ -301,6 +163,144 @@ def show_config() -> None:
     try:
         ConfigCommandImpl(console).execute()
 
+    except Exception as e:
+        _handle_error(e)
+
+
+@app.command("status", help="Displays detailed status of files tracked by Workstate")
+def status() -> None:
+    """Displays detailed status of files tracked by Workstate.
+
+    Analyzes the current .workstateignore file and displays a complete list
+    of all files and directories that will be included in the next
+    backup. Useful for validating exclusion rules before executing
+    the save command.
+
+    Examples:
+        ```bash
+        $ workstate status
+                            Files to save
+        ┌────────────────────────────────────────────┬───────┐
+        │ File/Directory                             │ Size  │
+        ├────────────────────────────────────────────┼───────┤
+        │ src/main.py                                │ 2.1KB │
+        │ config/settings.json                       │ 0.8KB │
+        │ requirements.txt                           │ 0.3KB │
+        │ ultralight_file.txt                        │     - │
+        └────────────────────────────────────────────┴───────┘
+        Total: 127 files (45.2 MB)
+        ```
+
+    Notes:
+        - Requires .workstateignore file valid in the current directory
+        - Does not perform modification operations, only consultation
+        - Useful for complex exclusion rules
+        - Shows both files and directories that will be included
+        - Sizes are recursively calculated for directories
+    """
+    try:
+        StatusCommandImpl(console, file_service).execute()
+    except Exception as e:
+        _handle_error(e)
+
+
+@app.command("save", help="Saves the current state of the project to AWS S3")
+def save_state(state_name: str) -> None:
+    """Saves the current state of the project to AWS S3
+
+    Performs the complete development environment backup process:
+    1. Analyzes the .workstateignore file to determine included files
+    2. Creates a temporary ZIP file with the selected files
+    3. Uploads the ZIP file to the configured S3 bucket
+    4. Removes the local temporary file
+
+    Args:
+        state_name (str): Unique identifier name for the project state.
+            This will be the name of the ZIP file on S3.
+
+    Examples:
+        ```bash
+        $ workstate save my-django-project
+        $ workstate save "project with spaces"
+        ```
+
+    Notes:
+        - Requires .workstateignore file valid in the current directory
+        - Project name is sanitized for compatibility S3
+        - Timestamp is automatically added to the final name of the file
+        - Temporary files are automatically cleaned in case of error
+    """
+    try:
+        SaveCommandImpl(state_name, console, s3_client, file_service, state_service).execute()
+
+    except Exception as e:
+        _handle_error(e)
+
+
+@app.command("list", help="Lists all project states available in AWS S3")
+def list_state_zips() -> None:
+    """Lists all project states available in AWS S3
+
+    Connects to the configured S3 bucket and retrieves a list of all
+    previously saved state ZIP files. Displays information such as
+    file name, size, and modification date in tabular format.
+
+    Examples:
+        ```bash
+        $ workstate list
+        ┌─────────────────────────┬──────────┬─────────────────────┐
+        │ Name                    │ Size     │ Last Modified       │
+        ├─────────────────────────┼──────────┼─────────────────────┤
+        │ my-project-2025.zip     │ 15.2 MB  │ 2025-01-15 14:30:00 │
+        │ other-project-2025.zip  │ 8.7 MB   │ 2025-01-14 09:15:22 │
+        └─────────────────────────┴──────────┴─────────────────────┘
+        ```
+
+    Notes:
+        - Only files with a .zip extension are displayed
+        - Requires valid AWS credentials
+        - List is sorted by modification date (most recent first)
+    """
+    try:
+        ListCommandImpl(console, s3_client, state_service).execute()
+    except Exception as e:
+        _handle_error(e)
+
+
+@app.command("download", help="Restores a saved project state from AWS S3")
+def download_state(
+    only_download: bool = typer.Option(False, "--only-download", help="Only downloads the state, without unpacking it"),
+) -> None:
+    """Restores a saved project state from AWS S3
+
+    An interactive restore process that:
+    1. Lists all available states in S3
+    2. Allows interactive selection of the desired state
+    3. Downloads the selected ZIP file
+    4. Unzips the files in the current directory
+    5. Removes the temporary ZIP file
+
+    Examples:
+        ```bash
+        $ workstate download
+        ? Select a zip file to download: Use ↑/↓ to navigate and Enter to select
+        ❯ my-project-2024-01-15.zip               | Size: 14.3 KB    | Last Modified: 2024-01-15 12:34:56
+          other-project-2024-01-14.zip            | Size: 10.3 KB    | Last Modified: 2024-01-15 12:34:56
+          old-project-2024-01-10.zip              | Size: 1.1 KB     | Last Modified: 2024-01-15 12:34:56
+        ```
+
+    Warning:
+        - Existing files may be overwritten during unpacking.
+        - It is recommended to back up the current state before restoring.
+        - This operation cannot be undone automatically.
+
+    Notes:
+        - Interactive interface using keyboard arrows for selection
+        - Displays detailed file information before confirmation
+        - Preserves the project's original directory structure
+    """
+    try:
+        DownloadCommandImpl(only_download, console, s3_client, state_service).execute()
     except Exception as e:
         _handle_error(e)
 

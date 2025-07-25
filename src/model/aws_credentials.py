@@ -1,30 +1,38 @@
 import boto3
 
-from src.exception.aws_region_exception import RegionValidationError
-from src.constants.envs import DEFAULT_AWS_REGION
-from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, SECRET_ACCESS_KEY
+from src.exception.credentials_validation_exception import CredentialsValidationException
+from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, SECRET_ACCESS_KEY, DEFAULT_AWS_REGION
 
 
 class AWSCredentials:
     VALID_REGIONS = boto3.session.Session().get_available_regions("s3")
 
-    def __init__(self, access_key_id: str, secret_access_key: str, bucket_name: str, region: str = DEFAULT_AWS_REGION):
-        self._validate_not_blank(ACCESS_KEY_ID, access_key_id)
-        self._validate_not_blank(SECRET_ACCESS_KEY, secret_access_key)
-        self._validate_not_blank(BUCKET_NAME, bucket_name)
-        self._validate_region(region)
+    def __init__(self, access_key_id: str, secret_access_key: str, bucket_name: str, region: str = None):
+        if region is None:
+            region = DEFAULT_AWS_REGION
+
+        validation_errors = []
+
+        self._validate_not_blank_accumulative(ACCESS_KEY_ID, access_key_id, validation_errors)
+        self._validate_not_blank_accumulative(SECRET_ACCESS_KEY, secret_access_key, validation_errors)
+        self._validate_not_blank_accumulative(BUCKET_NAME, bucket_name, validation_errors)
+        self._validate_region_accumulative(region, validation_errors)
+        if validation_errors:
+            raise CredentialsValidationException(validation_errors)
 
         self.access_key_id = access_key_id.strip()
         self.secret_access_key = secret_access_key.strip()
         self.region = region.strip()
         self.bucket_name = bucket_name.strip()
 
-    @staticmethod
-    def _validate_not_blank(field: str, value: str) -> None:
+    def _validate_not_blank_accumulative(self, field: str, value: str, errors: list[str]) -> None:
         if not value or not value.strip():
-            raise ValueError(f"'{field}' must not be empty or blank")
+            errors.append(f"'{field}' must not be empty or blank")
 
-    def _validate_region(self, region: str) -> None:
-        self._validate_not_blank("region", region)
+    def _validate_region_accumulative(self, region: str, errors: list[str]) -> None:
+        if not region or not region.strip():
+            errors.append("'region' must not be empty or blank")
+            return
+
         if region not in self.VALID_REGIONS:
-            raise RegionValidationError(region, self.VALID_REGIONS)
+            errors.append(f"Invalid region '{region}'. Valid regions include: {', '.join(self.VALID_REGIONS[:5])}...")

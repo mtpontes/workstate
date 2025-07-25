@@ -21,6 +21,7 @@ from src.api.commands.command import CommandI
 from src.model.aws_credentials import AWSCredentials
 from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
+from src.exception.credentials_validation_exception import CredentialsValidationException
 
 
 class ConfigureCommandImpl(CommandI):
@@ -51,21 +52,10 @@ class ConfigureCommandImpl(CommandI):
         if self.interactive:
             credentials: AWSCredentialsDTO = self._prompt_credencials()
 
-        self._validate_input(credentials)
-
-        ConfigService.save_aws_credentials(credentials.to_aws_credentials_model())
+        self._save_credentials(credentials)
 
         self.console.print(f"Configuration saved to: {ConfigService.CONFIG_FILE}")
         self.console.print("[green]✓ AWS credentials configured successfully![/green]\n")
-
-    def _validate_input(self, credentials):
-        results: list[str] = [key for key, value in credentials.__dict__.items() if not value or not value.strip()]
-        if results:
-            results_str: str = "".join(["\n- " + credencial_key for credencial_key in results])
-            self.console.print(
-                utils.format_error_message(f"All credentials are required. Missing credentials: {results_str}")
-            )
-            raise typer.Exit(1)
 
     def _prompt_credencials(self) -> AWSCredentialsDTO:
         """
@@ -84,7 +74,7 @@ class ConfigureCommandImpl(CommandI):
             tuple[str, str, str, str]: A tuple containing the provided or confirmed credentials:
             (access_key_id, secret_access_key, region, bucket_name)
         """
-        current_credentials: AWSCredentials = ConfigService.get_aws_credentials() or {}
+        current_credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
 
         # Stylized banner
         title = Text("AWS Configuration Setup", style="bold blue")
@@ -150,3 +140,13 @@ class ConfigureCommandImpl(CommandI):
         self.console.print(f"[cyan]Bucket:[/cyan] {bucket_name}")
 
         return AWSCredentialsDTO(access_key_id, secret_access_key, region, bucket_name)
+
+    def _save_credentials(self, credentials) -> None:
+        validated_credentials: AWSCredentials = None
+        try:
+            validated_credentials = credentials.to_aws_credentials_model()
+        except CredentialsValidationException as e:
+            self.console.print(utils.format_error_message(str(e)))
+            raise typer.Exit(1)
+
+        ConfigService.save_aws_credentials(validated_credentials)

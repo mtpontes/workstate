@@ -4,8 +4,8 @@ from typing import Iterable
 import boto3
 from mypy_boto3_s3.service_resource import ObjectSummary, Bucket
 
-from src.model.aws_credentials import AWSCredentials
 from src.services.config_service import ConfigService
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
 def list_objects() -> Iterable[ObjectSummary]:
@@ -55,7 +55,7 @@ def download_zip_file(object_name: str, destination: Path) -> Path:
 
 def _create_s3_resource() -> Bucket:
     """Creates S3 resource with proper configuration"""
-    credentials: AWSCredentials = ConfigService.get_aws_credentials()
+    credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
     s3_resource = boto3.resource(
         "s3",
         aws_access_key_id=credentials.access_key_id,

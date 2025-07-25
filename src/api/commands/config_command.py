@@ -21,9 +21,9 @@ from rich.panel import Panel
 from rich.console import Console
 
 from src.api.commands.command import CommandI
-from src.model.aws_credentials import AWSCredentials
-from src.services.config_service import ConfigService
 from src.constants.constants import DATE_PATTERN
+from src.services.config_service import ConfigService
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
 class ConfigCommandImpl(CommandI):
@@ -32,7 +32,7 @@ class ConfigCommandImpl(CommandI):
 
     def execute(self) -> None:
         try:
-            credentials: AWSCredentials = ConfigService.get_aws_credentials()
+            credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
             if credentials:
                 self._show_current_configurations(credentials)
             else:
@@ -42,7 +42,7 @@ class ConfigCommandImpl(CommandI):
             self._show_config_error(e)
             raise typer.Exit(1)
 
-    def _show_current_configurations(self, credentials: AWSCredentials) -> None:
+    def _show_current_configurations(self, credentials: AWSCredentialsDTO) -> None:
         """
         Displays the current AWS settings that are properly configured.
 
@@ -62,10 +62,12 @@ class ConfigCommandImpl(CommandI):
         table.add_column("Status", justify="center", width=12)
 
         # Mask access key
-        masked_key = f"{credentials.access_key_id[:8]}***"
+        masked_access_key = f"{credentials.access_key_id[:3]}***"
+        masked_secret_key = f"{credentials.secret_access_key[:3]}***"
 
         # Add lines to the table
-        table.add_row("Access Key ID", masked_key, "[green]✓[/green]")
+        table.add_row("Access Key ID", masked_access_key, "[green]✓[/green]")
+        table.add_row("Secret Access Key", masked_secret_key, "[green]✓[/green]")
         table.add_row("Region", credentials.region, "[green]✓[/green]")
         table.add_row("Bucket Name", credentials.bucket_name, "[green]✓[/green]")
 
@@ -102,6 +104,7 @@ class ConfigCommandImpl(CommandI):
         error_table.add_column("Status", justify="center", width=20)
 
         error_table.add_row("Access Key ID", "[red]✗ Not configured[/red]")
+        error_table.add_row("Secret Access Key", "[red]✗ Not configured[/red]")
         error_table.add_row("Region", "[red]✗ Not configured[/red]")
         error_table.add_row("Bucket Name", "[red]✗ Not configured[/red]")
 
