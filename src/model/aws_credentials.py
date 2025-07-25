@@ -1,7 +1,7 @@
 import boto3
 
 from src.exception.credentials_validation_exception import CredentialsValidationException
-from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, SECRET_ACCESS_KEY, DEFAULT_AWS_REGION
+from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, REGION, SECRET_ACCESS_KEY, DEFAULT_AWS_REGION
 
 
 class AWSCredentials:
@@ -11,8 +11,7 @@ class AWSCredentials:
         if region is None:
             region = DEFAULT_AWS_REGION
 
-        validation_errors = []
-
+        validation_errors = {}
         self._validate_not_blank_accumulative(ACCESS_KEY_ID, access_key_id, validation_errors)
         self._validate_not_blank_accumulative(SECRET_ACCESS_KEY, secret_access_key, validation_errors)
         self._validate_not_blank_accumulative(BUCKET_NAME, bucket_name, validation_errors)
@@ -25,14 +24,14 @@ class AWSCredentials:
         self.region = region.strip()
         self.bucket_name = bucket_name.strip()
 
-    def _validate_not_blank_accumulative(self, field: str, value: str, errors: list[str]) -> None:
+    def _validate_not_blank_accumulative(self, field: str, value: str, errors: dict[str, str]) -> None:
         if not value or not value.strip():
-            errors.append(f"'{field}' must not be empty or blank")
+            errors[field] = f"'{field}' must not be empty or blank"
 
-    def _validate_region_accumulative(self, region: str, errors: list[str]) -> None:
+    def _validate_region_accumulative(self, region: str, errors: dict[str, str]) -> None:
         if not region or not region.strip():
-            errors.append("'region' must not be empty or blank")
+            errors[REGION] = "'region' must not be empty or blank"
             return
 
         if region not in self.VALID_REGIONS:
-            errors.append(f"Invalid region '{region}'. Valid regions include: {', '.join(self.VALID_REGIONS[:5])}...")
+            errors[REGION] = f"Invalid region '{region}'. Valid regions include: {', '.join(self.VALID_REGIONS[:5])}..."

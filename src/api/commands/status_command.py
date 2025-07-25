@@ -1,11 +1,14 @@
 """
-This module displays the files to be saved in the terminal, showing the number and size in a readable format.
+Module responsible for the implementation of the project status verification command.
 
-It uses the Rich library to display a stylized table containing file information, such as name and size.
-It also displays a final summary with the total number of files and their cumulative size.
+This module contains the concrete implementation of the command to display the status
+Current project files that would be included in rescue operations.
+The command analyzes and presents an overview of the selected files,
+including size and total counting information.
 
-Function:
-    - print_status(files_to_save): Displays the files to be saved and basic statistics.
+The module manages file selection based on the filter rules
+configured, formatting the information in organized tables and
+Calculation of summary statistics on the project files.
 """
 
 from pathlib import Path
@@ -15,12 +18,14 @@ from rich.console import Console
 
 from src.utils import utils
 from src.services import file_service
+from src.api.views import status_view
 from src.api.commands.command import CommandI
 
 
 class StatusCommandImpl(CommandI):
-    def __init__(self, console: Console, file_service: file_service) -> None:
+    def __init__(self, console: Console, view: status_view, file_service: file_service) -> None:
         self.console = console
+        self.view = view
         self.file_service = file_service
 
     def execute(self) -> None:
@@ -38,20 +43,10 @@ class StatusCommandImpl(CommandI):
             self.console.print("[bold green]✔ No files found.[/bold green]")
             return
 
-        table = Table(title="\nFiles to save", show_header=True, header_style="bold white")
-        table.add_column("File/Directory", style="cyan", no_wrap=True)
-        table.add_column("Size", style="yellow3", justify="left")
-
-        total_files = 0
-        total_size_bytes = 0
-        for path in files_to_save:
-            size_bytes = path.stat().st_size if path.is_file() else 0
-            size_human = utils.format_file_size(size_bytes) if size_bytes > 0 else "-"
-            table.add_row(str(path), size_human)
-            total_files += 1
-            total_size_bytes += size_bytes
+        table: Table = self.view.status_files(files_to_save)
+        total_files: int = len(files_to_save)
+        total_size_bytes: int = sum(file.stat().st_size for file in files_to_save if file.is_file())
+        total_size_human: str = utils.format_file_size(total_size_bytes)
 
         self.console.print(table)
-        total_size_human = utils.format_file_size(total_size_bytes)
-
         self.console.print(f"[bold yellow]Total:[/bold yellow] {total_files} files ({total_size_human})\n")

@@ -1,3 +1,16 @@
+"""
+Module responsible for the implementation of the Project Startup Command.
+
+Este módulo contém a implementação concreta do comando para inicializar
+Projects with specific development tool settings.
+The command creates necessary configuration files based on the type of
+user -specified tool.
+
+The module manages the creation of customs files customs to
+different development tools, validating the options provided
+and displaying appropriate feedback messages to the user.
+"""
+
 from rich.text import Text
 from rich.console import Console
 

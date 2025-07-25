@@ -38,20 +38,23 @@ Author: mtpontes
 import typer
 from rich.console import Console
 
-from src.api.commands.config_command import ConfigCommandImpl
-from src.api.commands.configure_command import ConfigureCommandImpl
+from src.utils import utils
+from src.clients import s3_client
+from src.services import file_service
+from src.services import state_service
+from src.api.views import config_view, list_view, status_view
+from src.constants.messages import VALID_CODE_TOOLS_OPTIONS
+from src.templates.code_tool import CodeTool
 from src.api.commands.save_command import SaveCommandImpl
-from src.api.commands.status_command import StatusCommandImpl
 from src.api.commands.list_command import ListCommandImpl
 from src.api.commands.init_command import InitCommandImpl
+from src.api.commands.config_command import ConfigCommandImpl
+from src.api.commands.status_command import StatusCommandImpl
 from src.api.commands.download_command import DownloadCommandImpl
-from src.clients import s3_client
-from src.services import state_service
-from src.templates.code_tool import CodeTool
-from src.constants.messages import VALID_CODE_TOOLS_OPTIONS
-from src.services import file_service
-from src.utils import utils
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
+from src.api.commands.configure_command import ConfigureCommandImpl
+from src.api.prompters.download_prompter import DownloadStringPrompterImpl
+from src.api.prompters.configure_prompter import ConfigureStringPrompterImpl
 
 
 # Main instance of the Typer application
@@ -84,7 +87,7 @@ def init(tool: str = typer.Option(CodeTool.DEFAULT.value, "--tool", "-t", help=V
         - The template can be manually edited after creation.
     """
     try:
-        InitCommandImpl(tool, console, file_service).execute()
+        InitCommandImpl(tool=tool, console=console, file_service=file_service).execute()
     except Exception as e:
         _handle_error(e)
 
@@ -128,11 +131,14 @@ def configure_aws(
         - Use AWS IAM best practices for credential management
     """
     try:
-        print(access_key_id, secret_access_key, bucket_name, region)
         credentials = AWSCredentialsDTO(
             access_key_id=access_key_id, secret_access_key=secret_access_key, bucket_name=bucket_name, region=region
         )
-        ConfigureCommandImpl(console, interactive, credentials).execute()
+        prompter = ConfigureStringPrompterImpl(console=console, new_credentials=credentials)
+
+        ConfigureCommandImpl(
+            interactive=interactive, console=console, prompter=prompter, credentials=credentials
+        ).execute()
 
     except KeyboardInterrupt:
         console.print("\n[yellow]Configuration cancelled by user[/yellow]")
@@ -154,6 +160,7 @@ def show_config() -> None:
         │                                                   │
         │  AWS Credentials                                  │
         │  ├─ Access Key ID: AKIA***...                     │
+        │  ├─ Secret Access Key ID: AKIA***...              │
         │  ├─ Region: us-east-1                             │
         │  └─ Bucket Name: my-workstate-bucket              │
         │                                                   │
@@ -161,8 +168,7 @@ def show_config() -> None:
         ```
     """
     try:
-        ConfigCommandImpl(console).execute()
-
+        ConfigCommandImpl(console, config_view).execute()
     except Exception as e:
         _handle_error(e)
 
@@ -199,7 +205,7 @@ def status() -> None:
         - Sizes are recursively calculated for directories
     """
     try:
-        StatusCommandImpl(console, file_service).execute()
+        StatusCommandImpl(console=console, view=status_view, file_service=file_service).execute()
     except Exception as e:
         _handle_error(e)
 
@@ -231,7 +237,9 @@ def save_state(state_name: str) -> None:
         - Temporary files are automatically cleaned in case of error
     """
     try:
-        SaveCommandImpl(state_name, console, s3_client, file_service, state_service).execute()
+        SaveCommandImpl(
+            state_name=state_name, console=console, file_service=file_service, state_service=state_service
+        ).execute()
 
     except Exception as e:
         _handle_error(e)
@@ -262,7 +270,7 @@ def list_state_zips() -> None:
         - List is sorted by modification date (most recent first)
     """
     try:
-        ListCommandImpl(console, s3_client, state_service).execute()
+        ListCommandImpl(console, list_view, state_service).execute()
     except Exception as e:
         _handle_error(e)
 
@@ -300,7 +308,14 @@ def download_state(
         - Preserves the project's original directory structure
     """
     try:
-        DownloadCommandImpl(only_download, console, s3_client, state_service).execute()
+        prompter = DownloadStringPrompterImpl(console=console, state_service=state_service)
+        DownloadCommandImpl(
+            only_download=only_download,
+            console=console,
+            prompter=prompter,
+            s3_client=s3_client,
+            state_service=state_service,
+        ).execute()
     except Exception as e:
         _handle_error(e)
 
