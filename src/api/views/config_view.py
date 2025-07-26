@@ -10,7 +10,7 @@ from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, DATE_PATTERN, REGION, SECRET_ACCESS_KEY
 
 
-def configurations_table(credentials: AWSCredentialsDTO):
+def configurations_table(credentials: AWSCredentialsDTO) -> Table:
     table = Table(
         title="\nAWS Configuration", title_style="bold cyan", box=box.ROUNDED, show_header=False, padding=(0, 1)
     )
@@ -32,7 +32,7 @@ def configurations_table(credentials: AWSCredentialsDTO):
     return table
 
 
-def config_file_info_panel() -> None:
+def config_file_info_panel() -> Panel:
     return Panel(
         f"[dim]Configuration file: {ConfigService.CONFIG_FILE}[/dim]\n"
         f"[dim]Last modified: {_get_config_last_modified(ConfigService.CONFIG_FILE)}[/dim]",
@@ -63,7 +63,7 @@ def _get_config_last_modified(config_file: str) -> str:
         return "Unknown"
 
 
-def configurations_with_errors_table(errors: dict[str, str]) -> Panel:
+def configurations_with_errors_table(errors: dict[str, str]) -> Table:
     error_table = Table(
         title="\nConfiguration Status", title_style="bold red", box=box.ROUNDED, show_header=False, padding=(0, 1)
     )
@@ -92,6 +92,7 @@ def configurations_with_errors_table(errors: dict[str, str]) -> Panel:
             table.add_row(key_formatted, "[red]✗ Not configured[/red]")
 
     add_rows(error_table, errors)
+    return error_table
 
 
 def help_panel() -> Panel:
