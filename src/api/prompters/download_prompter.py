@@ -24,7 +24,7 @@ from src.constants.constants import DATE_PATTERN, SPACE
 from src.api.prompters.string_prompter import StringPrompterI
 
 
-class DownloadStringPrompterImpl(StringPrompterI):
+class ZipFileSelectorStringPrompterImpl(StringPrompterI):
     def __init__(self, console: Console, state_service: state_service):
         self.console = console
         self.state_service = state_service

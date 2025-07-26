@@ -17,7 +17,7 @@ from rich.console import Console
 from src.clients import s3_client
 from src.api.commands.command import CommandI
 from src.services import file_service, state_service
-from src.api.prompters.download_prompter import DownloadStringPrompterImpl
+from src.api.prompters.download_prompter import ZipFileSelectorStringPrompterImpl
 
 
 class DownloadCommandImpl(CommandI):
@@ -25,14 +25,12 @@ class DownloadCommandImpl(CommandI):
         self,
         only_download: bool,
         console: Console,
-        prompter: DownloadStringPrompterImpl,
-        s3_client: s3_client,
+        prompter: ZipFileSelectorStringPrompterImpl,
         state_service: state_service,
     ) -> None:
         self.only_download = only_download
         self.console = console
         self.prompter = prompter
-        self.s3_client = s3_client
         self.state_service = state_service
 
     def execute(self) -> None:

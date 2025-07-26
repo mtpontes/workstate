@@ -50,4 +50,8 @@ def save_state_file(zip_file: Path, object_name: str) -> None:
         zip_file (Path): Path to the local `.zip` file to upload.
         object_name (str): The target key (filename) for the object in S3.
     """
-    return s3_client.create_s3_resource().upload_file(str(zip_file), object_name)
+    s3_client.create_s3_resource().upload_file(str(zip_file), object_name)
+
+
+def delete_state_file(s3_object_name: str) -> None:
+    s3_client.create_s3_resource().Object(s3_object_name).delete()

@@ -25,12 +25,13 @@ Dependencies:
 
 Example of use:
     $ workstate init --tool python
-    $ workstate list
-    $ workstate download
-    $ workstate save my-project
-    $ workstate status
     $ workstate configure
     $ workstate config
+    $ workstate status
+    $ workstate save my-project
+    $ workstate list
+    $ workstate download
+    $ workstate delete
 
 Author: mtpontes
 """
@@ -39,7 +40,6 @@ import typer
 from rich.console import Console
 
 from src.utils import utils
-from src.clients import s3_client
 from src.services import file_service
 from src.services import state_service
 from src.api.views import config_view, list_view, status_view
@@ -48,13 +48,14 @@ from src.templates.code_tool import CodeTool
 from src.api.commands.save_command import SaveCommandImpl
 from src.api.commands.list_command import ListCommandImpl
 from src.api.commands.init_command import InitCommandImpl
+from src.api.commands.delete_command import DeleteCommandImpl
 from src.api.commands.config_command import ConfigCommandImpl
 from src.api.commands.status_command import StatusCommandImpl
 from src.api.commands.download_command import DownloadCommandImpl
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 from src.api.commands.configure_command import ConfigureCommandImpl
-from src.api.prompters.download_prompter import DownloadStringPrompterImpl
 from src.api.prompters.configure_prompter import ConfigureStringPrompterImpl
+from src.api.prompters.download_prompter import ZipFileSelectorStringPrompterImpl
 
 
 # Main instance of the Typer application
@@ -308,12 +309,24 @@ def download_state(
         - Preserves the project's original directory structure
     """
     try:
-        prompter = DownloadStringPrompterImpl(console=console, state_service=state_service)
+        prompter = ZipFileSelectorStringPrompterImpl(console=console, state_service=state_service)
         DownloadCommandImpl(
             only_download=only_download,
             console=console,
             prompter=prompter,
-            s3_client=s3_client,
+            state_service=state_service,
+        ).execute()
+    except Exception as e:
+        _handle_error(e)
+
+
+@app.command("delete", help="Deletes a saved project state from AWS S3")
+def delete_state() -> None:
+    try:
+        prompter = ZipFileSelectorStringPrompterImpl(console=console, state_service=state_service)
+        DeleteCommandImpl(
+            console=console,
+            prompter=prompter,
             state_service=state_service,
         ).execute()
     except Exception as e:
