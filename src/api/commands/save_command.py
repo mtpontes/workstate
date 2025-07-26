@@ -34,8 +34,9 @@ class SaveCommandImpl(CommandI):
         self.state_service = state_service
 
     def execute(self) -> None:
-        files_to_save: list[Path] = self.file_service.select_files()
-        temporary_zip_file: Path = self.file_service.zip_files(files_to_save)
+        with self.console.status("[bold green]Zipping files...", spinner="dots"):
+            files_to_save: list[Path] = self.file_service.select_files()
+            temporary_zip_file: Path = self.file_service.zip_files(files_to_save)
         zip_file_name: str = utils.define_zip_file_name(self.state_name)
 
         with self.console.status("[bold green]Saving state...", spinner="dots"):

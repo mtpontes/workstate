@@ -37,7 +37,8 @@ class StatusCommandImpl(CommandI):
         Args:
             files_to_save(list[Path]): List of paths (Path) of the files or directories to be processed.
         """
-        files_to_save: list[Path] = self.file_service.select_files()
+        with self.console.status("[bold green]Filtering files...", spinner="dots"):
+            files_to_save: list[Path] = self.file_service.select_files()
 
         if not files_to_save:
             self.console.print("[bold green]✔ No files found.[/bold green]")
