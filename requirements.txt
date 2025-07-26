@@ -1,14 +1,6 @@
 typer
 boto3
 pathspec
-mypy
 boto3-stubs[essential]
 rich
 InquirerPy
-python-dotenv
-
-
-# Linters
-ruff
-black
-tzdata
