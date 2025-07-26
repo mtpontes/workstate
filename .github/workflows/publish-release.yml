@@ -48,8 +48,6 @@ jobs:
           tag_name: ${{ steps.version.outputs.version-tag }}
           name: ${{ steps.version.outputs.version-tag }}
           body: |
-            ## Changes
-            
             Release automatically created from merge commit.
             Version: `${{ steps.version.outputs.version }}`
             
@@ -59,8 +57,7 @@ jobs:
             ### How to use
             1. Download the `workstate-win64.zip` file
             2. Extract it to a folder of your choice
-            3. Configure the `config.json` file as needed
-            4. Run `workstate.exe`
+            3. Run `workstate.exe`
             
             ---
             *This release was automatically generated from commit: `${{ github.sha }}`*
