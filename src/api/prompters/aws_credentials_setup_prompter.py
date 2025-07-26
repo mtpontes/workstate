@@ -23,7 +23,7 @@ from src.api.prompters.string_prompter import StringPrompterI
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
-class ConfigureStringPrompterImpl(StringPrompterI):
+class AWSCredentialsSetupPrompter(StringPrompterI):
     def __init__(self, console: Console, new_credentials: AWSCredentialsDTO):
         self.console = console
         self.new_credentials = new_credentials
