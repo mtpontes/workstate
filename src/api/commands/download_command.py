@@ -14,10 +14,9 @@ temporary after successful extraction.
 from pathlib import Path
 from rich.console import Console
 
-from src.clients import s3_client
 from src.api.commands.command import CommandI
 from src.services import file_service, state_service
-from src.api.prompters.download_prompter import ZipFileSelectorStringPrompterImpl
+from src.api.prompters.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
 class DownloadCommandImpl(CommandI):
@@ -25,7 +24,7 @@ class DownloadCommandImpl(CommandI):
         self,
         only_download: bool,
         console: Console,
-        prompter: ZipFileSelectorStringPrompterImpl,
+        prompter: ZipFileSelectorPrompter,
         state_service: state_service,
     ) -> None:
         self.only_download = only_download
@@ -46,7 +45,9 @@ class DownloadCommandImpl(CommandI):
             str: Name (key) of the selected zip file.
         """
         selected_zip_file: str = self.prompter.prompt()
-        zip_file: Path = self.state_service.download_state_file(selected_zip_file)
+
+        with self.console.status("[bold green]Downloading state...", spinner="dots"):
+            zip_file: Path = self.state_service.download_state_file(selected_zip_file)
         self.console.print(f"\n[green]Downloaded:[/green] {zip_file}")
 
         if self.only_download:

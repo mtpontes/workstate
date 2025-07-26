@@ -24,13 +24,14 @@ from src.constants.constants import DATE_PATTERN, SPACE
 from src.api.prompters.string_prompter import StringPrompterI
 
 
-class ZipFileSelectorStringPrompterImpl(StringPrompterI):
+class ZipFileSelectorPrompter(StringPrompterI):
     def __init__(self, console: Console, state_service: state_service):
         self.console = console
         self.state_service = state_service
 
     def prompt(self) -> str:
-        zip_files: list[ObjectSummary] = self.state_service.get_state_files()
+        with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
+            zip_files: list[ObjectSummary] = self.state_service.get_state_files()
         if not zip_files:
             self.console.print("[yellow]No ZIP files found in the S3 bucket.[/yellow]")
             raise typer.Exit(0)

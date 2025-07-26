@@ -38,7 +38,8 @@ class SaveCommandImpl(CommandI):
         temporary_zip_file: Path = self.file_service.zip_files(files_to_save)
         zip_file_name: str = utils.define_zip_file_name(self.state_name)
 
-        self.state_service.save_state_file(temporary_zip_file, zip_file_name)
+        with self.console.status("[bold green]Saving state...", spinner="dots"):
+            self.state_service.save_state_file(temporary_zip_file, zip_file_name)
         temporary_zip_file.unlink()
 
         self.console.print(

@@ -27,7 +27,8 @@ class ListCommandImpl(CommandI):
         self.state_service = state_service
 
     def execute(self) -> Table:
-        zip_files: list[ObjectSummary] = self.state_service.get_state_files()
+        with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
+            zip_files: list[ObjectSummary] = self.state_service.get_state_files()
 
         table: Table = self.views.zip_files_table(zip_files)
         self.console.print(table)

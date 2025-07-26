@@ -19,13 +19,13 @@ from src.api.commands.command import CommandI
 from src.model.aws_credentials import AWSCredentials
 from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
-from src.api.prompters.configure_prompter import ConfigureStringPrompterImpl
+from src.api.prompters.aws_credentials_setup_prompter import AWSCredentialsSetupPrompter
 from src.exception.credentials_validation_exception import CredentialsValidationException
 
 
 class ConfigureCommandImpl(CommandI):
     def __init__(
-        self, interactive: bool, console: Console, prompter: ConfigureStringPrompterImpl, credentials: AWSCredentialsDTO
+        self, interactive: bool, console: Console, prompter: AWSCredentialsSetupPrompter, credentials: AWSCredentialsDTO
     ) -> None:
         self.interactive = interactive
         self.console = console

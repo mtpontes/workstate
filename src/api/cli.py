@@ -54,8 +54,8 @@ from src.api.commands.status_command import StatusCommandImpl
 from src.api.commands.download_command import DownloadCommandImpl
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 from src.api.commands.configure_command import ConfigureCommandImpl
-from src.api.prompters.configure_prompter import ConfigureStringPrompterImpl
-from src.api.prompters.download_prompter import ZipFileSelectorStringPrompterImpl
+from src.api.prompters.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.api.prompters.aws_credentials_setup_prompter import AWSCredentialsSetupPrompter
 
 
 # Main instance of the Typer application
@@ -135,7 +135,7 @@ def configure_aws(
         credentials = AWSCredentialsDTO(
             access_key_id=access_key_id, secret_access_key=secret_access_key, bucket_name=bucket_name, region=region
         )
-        prompter = ConfigureStringPrompterImpl(console=console, new_credentials=credentials)
+        prompter = AWSCredentialsSetupPrompter(console=console, new_credentials=credentials)
 
         ConfigureCommandImpl(
             interactive=interactive, console=console, prompter=prompter, credentials=credentials
@@ -309,7 +309,7 @@ def download_state(
         - Preserves the project's original directory structure
     """
     try:
-        prompter = ZipFileSelectorStringPrompterImpl(console=console, state_service=state_service)
+        prompter = ZipFileSelectorPrompter(console=console, state_service=state_service)
         DownloadCommandImpl(
             only_download=only_download,
             console=console,
@@ -323,7 +323,7 @@ def download_state(
 @app.command("delete", help="Deletes a saved project state from AWS S3")
 def delete_state() -> None:
     try:
-        prompter = ZipFileSelectorStringPrompterImpl(console=console, state_service=state_service)
+        prompter = ZipFileSelectorPrompter(console=console, state_service=state_service)
         DeleteCommandImpl(
             console=console,
             prompter=prompter,
