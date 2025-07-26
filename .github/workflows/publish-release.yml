@@ -1,0 +1,69 @@
+name: Publish Release
+
+on:
+  workflow_call:
+    inputs:
+      release-version:
+        description: 'Version number extracted from commit message (e.g., 1.2.3)'
+        required: true
+        type: string
+
+jobs:
+  release-publisher:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: workstate-win64
+          path: ./
+
+      - name: Prepare version and validate
+        id: version
+        run: |
+          VERSION="${{ inputs.release-version }}"
+          echo "Received version: $VERSION"
+          
+          # Valida se está no formato x.x.x
+          if [[ ! $VERSION =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Error: Version should follow pattern x.x.x, got: $VERSION"
+            exit 1
+          fi
+          
+          # Adds the 'v' prefix to the tag
+          VERSION_TAG="v$VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version-tag=$VERSION_TAG" >> $GITHUB_OUTPUT
+          echo "✅ Version validated and prepared: $VERSION_TAG"
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
+        with:
+          tag_name: ${{ steps.version.outputs.version-tag }}
+          name: ${{ steps.version.outputs.version-tag }}
+          body: |
+            ## Changes
+            
+            Release automatically created from merge commit.
+            Version: `${{ steps.version.outputs.version }}`
+            
+            ### Downloads
+            - **workstate-win64.zip**: Executable for Windows 64-bit
+            
+            ### How to use
+            1. Download the `workstate-win64.zip` file
+            2. Extract it to a folder of your choice
+            3. Configure the `config.json` file as needed
+            4. Run `workstate.exe`
+            
+            ---
+            *This release was automatically generated from commit: `${{ github.sha }}`*
+          draft: false
+          prerelease: false
+          files: ./workstate-win64.zip
