@@ -19,7 +19,7 @@ from src.utils import utils
 from src.constants.constants import DOT_ZIP, WRITE_BINARY_OPERATOR
 
 
-class DownloadUrlCommandImpl:
+class DownloadPreSignedCommandImpl:
     def __init__(self, console: Console, url: str, extract: bool = True, output_path: str = None):
         self.console = console
         self.url = url

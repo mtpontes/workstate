@@ -39,16 +39,16 @@ Author: mtpontes
 import typer
 from rich.console import Console
 
-from src.services import file_service
-from src.services import state_service
+from src.cli import download_pre_signed_entry
 from src.views import share_info_view
 from src.views import config_view, list_view, status_view
+from src.services import file_service
+from src.services import state_service
 from src.cli import (
     config,
     configure_entry,
     delete_entry,
     download_entry,
-    download_url_entry,
     init_entry,
     list_entry,
     save_entry,
@@ -68,5 +68,5 @@ save_entry.register(app, console, file_service, state_service)
 download_entry.register(app, console, state_service)
 delete_entry.register(app, console, state_service)
 list_entry.register(app, console, list_view, state_service)
-download_url_entry.register(app, console, config_view)
+download_pre_signed_entry.register(app, console, config_view)
 share_entry.register(app, console, state_service, share_info_view)
