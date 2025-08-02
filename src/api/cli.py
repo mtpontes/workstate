@@ -39,21 +39,24 @@ Author: mtpontes
 import typer
 from rich.console import Console
 
-from src.utils import utils
 from src.services import file_service
 from src.services import state_service
+from src.utils.utils import handle_error
+from src.api.views import share_info_view
 from src.api.views import config_view, list_view, status_view
 from src.constants.messages import VALID_CODE_TOOLS_OPTIONS
 from src.templates.code_tool import CodeTool
 from src.api.commands.save_command import SaveCommandImpl
 from src.api.commands.list_command import ListCommandImpl
 from src.api.commands.init_command import InitCommandImpl
+from src.api.commands.share_command import ShareCommandImpl
 from src.api.commands.delete_command import DeleteCommandImpl
 from src.api.commands.config_command import ConfigCommandImpl
 from src.api.commands.status_command import StatusCommandImpl
 from src.api.commands.download_command import DownloadCommandImpl
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 from src.api.commands.configure_command import ConfigureCommandImpl
+from src.api.commands.download_url_command import DownloadUrlCommandImpl
 from src.api.prompters.zip_file_selector_prompter import ZipFileSelectorPrompter
 from src.api.prompters.aws_credentials_setup_prompter import AWSCredentialsSetupPrompter
 
@@ -90,7 +93,7 @@ def init(tool: str = typer.Option(CodeTool.DEFAULT.value, "--tool", "-t", help=V
     try:
         InitCommandImpl(tool=tool, console=console, file_service=file_service).execute()
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("configure", help="Configure AWS credentials for Workstate")
@@ -145,7 +148,7 @@ def configure_aws(
         console.print("\n[yellow]Configuration cancelled by user[/yellow]")
         raise typer.Exit(0)
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("config", help="Show current Workstate configuration")
@@ -171,7 +174,7 @@ def show_config() -> None:
     try:
         ConfigCommandImpl(console, config_view).execute()
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("status", help="Displays detailed status of files tracked by Workstate")
@@ -208,7 +211,7 @@ def status() -> None:
     try:
         StatusCommandImpl(console=console, view=status_view, file_service=file_service).execute()
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("save", help="Saves the current state of the project to AWS S3")
@@ -243,7 +246,7 @@ def save_state(state_name: str) -> None:
         ).execute()
 
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("list", help="Lists all project states available in AWS S3")
@@ -273,7 +276,7 @@ def list_state_zips() -> None:
     try:
         ListCommandImpl(console, list_view, state_service).execute()
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("download", help="Restores a saved project state from AWS S3")
@@ -317,7 +320,7 @@ def download_state(
             state_service=state_service,
         ).execute()
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
 @app.command("delete", help="Deletes a saved project state from AWS S3")
@@ -330,10 +333,121 @@ def delete_state() -> None:
             state_service=state_service,
         ).execute()
     except Exception as e:
-        _handle_error(e)
+        handle_error(console, e)
 
 
-def _handle_error(e):
-    message: str = utils.format_error_message(e)
-    console.print(message)
-    raise typer.Exit(1)
+@app.command("share", help="Generates a shareable pre-signed URL for a project state")
+def share_state(
+    expiration_hours: int = typer.Option(24, "--expiration", "-e", help="Hours until URL expires (default: 24)"),
+) -> None:
+    """Generates a shareable pre-signed URL for a project state
+
+    Creates a temporary secure URL that allows team members to download
+    a specific project state without requiring AWS credentials.
+    The URL automatically expires after the specified time period.
+
+    Args:
+        expiration_hours (int): Number of hours until the URL expires.
+            Valid range: 1-168 hours (1 week). Default: 24 hours.
+
+    Examples:
+        ```bash
+        # Generate URL that expires in 24 hours (default)
+        $ workstate share
+
+        # Generate URL that expires in 2 hours
+        $ workstate share --expiration 2
+
+        # Generate URL that expires in 1 week
+        $ workstate share -e 168
+        ```
+
+    Security Notes:
+        - Anyone with the URL can download the state file
+        - URLs are temporary and automatically expire
+        - No AWS credentials are required for download
+        - Consider the sensitivity of your project data when sharing
+
+    Interactive Process:
+        1. Lists all available states in your S3 bucket
+        2. Allows interactive selection of the desired state
+        3. Generates a secure pre-signed URL
+        4. Displays the URL with usage instructions
+    """
+    try:
+        if not 1 <= expiration_hours <= 168:  # 1 hour to 1 week
+            console.print("[red]Error: Expiration hours must be between 1 and 168 (1 week)[/red]")
+            raise typer.Exit(1)
+
+        prompter = ZipFileSelectorPrompter(console=console, state_service=state_service)
+        ShareCommandImpl(
+            console=console,
+            prompter=prompter,
+            state_service=state_service,
+            view=share_info_view,
+            expiration_hours=expiration_hours,
+        ).execute()
+
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Share operation cancelled by user[/yellow]")
+        raise typer.Exit(0)
+    except Exception as e:
+        handle_error(console, e)
+
+
+@app.command("download-url", help="Downloads a project state from a shared pre-signed URL")
+def download_from_parts(
+    base_url: str = typer.Argument(..., help="Base URL without signature or expires"),
+    signature: str = typer.Argument(..., help="Signature part of the pre-signed URL"),
+    expires: str = typer.Argument(..., help="Expiration timestamp of the pre-signed URL"),
+    no_extract: bool = typer.Option(False, "--no-extract", help="Don't extract the ZIP file after download"),
+    output: str = typer.Option(None, "--output", "-o", help="Custom output path for downloaded file"),
+) -> None:
+    """Downloads a project state from a shared pre-signed URL
+
+    This command allows team members to download project states shared
+    via pre-signed URLs without requiring AWS credentials. The downloaded
+    ZIP file can be automatically extracted to restore the project state.
+
+    Args:
+        url (str): The pre-signed URL shared by a team member
+        no_extract (bool): If True, keeps the ZIP file without extracting
+        output (str): Custom path/filename for the downloaded file
+
+    Examples:
+        ```bash
+        # Download and extract automatically
+        $ workstate download-url "https://s3.amazonaws.com/bucket/file.zip?..."
+
+        # Download without extracting
+        $ workstate download-url "https://s3.amazonaws.com/..." --no-extract
+
+        # Download to custom location
+        $ workstate download-url "https://s3.amazonaws.com/..." --output /path/to/myfile.zip
+
+        # Download with custom name and no extraction
+        $ workstate download-url "https://s3.amazonaws.com/..." -o shared-state.zip --no-extract
+        ```
+
+    Process:
+        1. Validates the provided URL
+        2. Downloads the file with progress indication
+        3. Optionally extracts the ZIP contents
+        4. Offers to clean up the ZIP file after extraction
+
+    Notes:
+        - Works with any valid pre-signed URL from Workstate
+        - Automatically detects filename from URL
+        - Shows download progress for large files
+        - Validates ZIP integrity before extraction
+        - URLs may have expiration times set by the sharer
+    """
+    full_url = f"{base_url}&Signature={signature}&Expires={expires}"
+
+    try:
+        DownloadUrlCommandImpl(console=console, url=full_url, extract=not no_extract, output_path=output).execute()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Download cancelled by user[/yellow]")
+        raise typer.Exit(0)
+    except Exception as e:
+        handle_error(console, e)

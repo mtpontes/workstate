@@ -4,10 +4,12 @@ from typing import Iterable
 from mypy_boto3_s3.service_resource import ObjectSummary, Bucket
 
 from src.clients import s3_client
+from src.services.config_service import ConfigService
 from src.constants.constants import DOT_ZIP, DOWNLOADS
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
-def get_state_files() -> list[ObjectSummary]:
+def list_states() -> list[ObjectSummary]:
     """
     Retrieve all `.zip` files from the configured S3 bucket.
 
@@ -55,3 +57,20 @@ def save_state_file(zip_file: Path, object_name: str) -> None:
 
 def delete_state_file(s3_object_name: str) -> None:
     s3_client.create_s3_resource().Object(s3_object_name).delete()
+
+
+def generate_presigned_url(object_key: str, expiration_seconds: int = 3600) -> str:
+    """Generate a pre-signed URL for downloading an S3 object."""
+    try:
+        aws_credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
+
+        presigned_url = s3_client.create_s3_client().generate_presigned_url(
+            "get_object",
+            Params={"Bucket": aws_credentials.bucket_name, "Key": object_key},
+            ExpiresIn=expiration_seconds,
+        )
+
+        return presigned_url
+
+    except Exception as e:
+        raise Exception(f"Failed to generate pre-signed URL: {str(e)}")

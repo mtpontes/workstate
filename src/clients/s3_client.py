@@ -15,3 +15,14 @@ def create_s3_resource() -> Bucket:
         region_name=credentials.region,
     )
     return s3_resource.Bucket(credentials.bucket_name)
+
+
+def create_s3_client() -> Bucket:
+    """Creates S3 resource with proper configuration"""
+    credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
+    return boto3.client(
+        "s3",
+        aws_access_key_id=credentials.access_key_id,
+        aws_secret_access_key=credentials.secret_access_key,
+        region_name=credentials.region,
+    )
