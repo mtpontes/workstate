@@ -17,20 +17,22 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 ## 🚀 Principais Funcionalidades
 
 - **Seleção Inteligente de Arquivos**: Usa arquivos `.workstateignore` (similar ao `.gitignore`) para definir o que deve ser incluído no snapshot do ambiente
-- **Templates Pré-construídos**: Vem com templates otimizados para ferramentas de desenvolvimento populares (Python, Node.js, Java, React, Angular, etc.)
-- **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento
 - **Interface Interativa**: CLI amigável com formatação rica e menus interativos
-- **Multiplataforma**: Funciona no Windows, macOS e Linux
 - **Restauração Seletiva**: Baixe estados sem descompactar ou restaure ambientes completos
+- **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento
+- **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias do AWS S3
+- **Templates Pré-construídos**: Vem com templates otimizados para ferramentas de desenvolvimento populares (Python, Node.js, Java, React, Angular, etc.)
+- **Multiplataforma**: Funciona no Windows, macOS e Linux
 
 ## 📋 O Que É Capturado
+Você é quem manda o que será capturado, mas a solução foi pensada para capturar tudo que o controle de versão tradicional ignora.
 
-O Workstate é projetado para capturar tudo que o controle de versão tradicional ignora:
-
+Exemplos:
 - **Variáveis de Ambiente**: `.env`, `.env.local`, arquivos de configuração
 - **Configurações de IDE**: `.vscode/`, `.idea/`, configurações de editores
+- **Scripts locais**: Arquivos de teste, exemplos, scripts de seed, arquivos de contexto (llms) 
 - **Bancos de Dados Locais**: Arquivos SQLite, dumps de bancos locais
-- **Containers de Desenvolvimento**: Configurações Docker, volumes
+- **Containers de Desenvolvimento**: Arquivos docker-compose, volumes de containers
 - **Artefatos de Build**: Arquivos compilados, dependências
 - **Configurações Locais**: Configurações específicas de ferramentas e preferências
 - **Dados de Desenvolvimento**: Dados de teste, arquivos mock, assets locais
@@ -193,74 +195,28 @@ workstate download --download-only
 
 | Comando | Descrição | Argumentos | Opções |
 |---------|-----------|------------|--------|
-| `init` | Inicializa um novo projeto Workstate com arquivo `.workstateignore` | - | `--tool, -t`: Tipo de ferramenta (padrão: `generic`) |
-| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | - |
-| `list` | Lista todos os estados disponíveis no AWS S3 | - | - |
-| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`: Apenas baixa sem extrair |
-| `status` | Mostra arquivos rastreados pelo Workstate | - | - |
-| `configure` | Configura credenciais AWS | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
 | `config` | Exibe configuração atual do Workstate | - | - |
+| `configure` | Configura credenciais AWS | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
+| `init` | Inicializa um novo projeto Workstate com arquivo `.workstateignore` | - | `--tool, -t`: Tipo de ferramenta (padrão: `generic`) |
+| `status` | Mostra arquivos rastreados pelo Workstate | - | - |
+| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | - |
+| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`: Apenas baixa sem extrair |
+| `delete` | Exclui um estado salvo no AWS S3 | - | - |
+| `list` | Lista todos os estados disponíveis no AWS S3 | - | - |
+| `download-pre-signed` | Restaura um estado salvo do AWS S3 a partir de uma URL pré-assinada | `base_url`, `signature`, `expires`: Componentes da URL pré-assinada | `--no-extract`, `--output, -o` |
+| `share` | Gera uma URL pré-assinada do AWS S3 para permitir o download de um estado sem necessidade de autenticação | - | `--expiration, -e`: Horas até a URL expirar (padrão: 24) |
 
 ### Detalhamento dos Comandos
 
-### `init`
-**Funcionalidade:** Cria arquivo `.workstateignore` com template otimizado para a ferramenta especificada.
-
-**Ferramentas válidas:** `python`, `node`, `java`, `go`, `generic`
-
-**Exemplos:**
-```bash
-workstate init --tool python
-workstate init -t node
-workstate init  # usa template generic
-```
-
-### `save`
-**Funcionalidade:** Comprime arquivos selecionados e faz upload para S3.
-
-**Processo:**
-1. Analisa `.workstateignore`
-2. Cria ZIP temporário
-3. Upload para S3
-4. Remove arquivo temporário
-
-**Exemplos:**
-```bash
-workstate save my-django-project
-workstate save "projeto com espaços"
-```
-
-### `list`
-**Funcionalidade:** Lista estados salvos no S3 com informações detalhadas.
+### `config`
+**Funcionalidade:** Exibe configuração AWS atual sem revelar informações sensíveis.
 
 **Informações exibidas:**
-- Nome do arquivo
-- Tamanho
-- Data de modificação
-- Ordenação por data (mais recente primeiro)
+- Access Key ID (mascarado)
+- Região AWS
+- Nome do bucket
+- Status da configuração
 
-### `download`
-**Funcionalidade:** Interface interativa para restaurar estados salvos.
-
-**Processo:**
-1. Lista estados disponíveis
-2. Seleção interativa
-3. Download do ZIP
-4. Extração (opcional)
-5. Limpeza de arquivos temporários
-
-**Opções:**
-| Opção | Descrição |
-|-------|-----------|
-| `--only-download` | Baixa apenas o ZIP sem extrair |
-
-### `status`
-**Funcionalidade:** Visualiza arquivos que serão incluídos no próximo backup.
-
-**Informações exibidas:**
-- Caminhos de arquivos/diretórios
-- Tamanhos individuais
-- Total de arquivos e tamanho
 
 ### `configure`
 **Funcionalidade:** Configura credenciais AWS (armazenadas em `~/.workstate/config.json`).
@@ -286,14 +242,130 @@ workstate configure --access-key-id AKIA... --secret-access-key xxx --region us-
 workstate configure --region sa-east-1 --bucket-name my-workstate-bucket
 ```
 
-### `config`
-**Funcionalidade:** Exibe configuração AWS atual sem revelar informações sensíveis.
+### `init`
+**Funcionalidade:** Cria arquivo `.workstateignore` com template otimizado para a ferramenta especificada.
+
+**Ferramentas válidas:** `python`, `node`, `java`, `go`, `generic`
+
+**Exemplos:**
+```bash
+workstate init --tool python
+workstate init -t node
+workstate init  # usa template generic
+```
+
+### `status`
+**Funcionalidade:** Visualiza arquivos que serão incluídos no próximo backup.
 
 **Informações exibidas:**
-- Access Key ID (mascarado)
-- Região AWS
-- Nome do bucket
-- Status da configuração
+- Caminhos de arquivos/diretórios
+- Tamanhos individuais
+- Total de arquivos e tamanho
+
+
+### `save`
+**Funcionalidade:** Comprime arquivos selecionados e faz upload para S3.
+
+**Processo:**
+1. Analisa `.workstateignore`
+2. Cria ZIP temporário
+3. Upload para S3
+4. Remove arquivo temporário
+
+**Exemplos:**
+```bash
+workstate save my-django-project
+workstate save "projeto com espaços"
+```
+
+### `download`
+**Funcionalidade:** Interface interativa para restaurar estados salvos.
+
+**Processo:**
+1. Lista estados disponíveis
+2. Seleção interativa
+3. Download do ZIP
+4. Extração (opcional)
+5. Limpeza de arquivos temporários
+
+**Opções:**
+| Opção | Descrição |
+|-------|-----------|
+| `--only-download` | Baixa apenas o ZIP sem extrair |
+
+
+### `delete`
+**Funcionalidade:** Exclui um estado salvo no AWS S3 de forma interativa.
+
+**Processo:**
+1. Lista estados disponíveis
+2. Seleção interativa do estado a ser excluído
+3. Confirmação da exclusão
+4. Remoção do arquivo do S3
+
+
+### `share`
+**Funcionalidade:** Gera uma URL pré-assinada para compartilhar um estado do projeto sem necessidade de credenciais AWS.
+
+**Processo:**
+1. Lista estados disponíveis
+2. Seleção interativa do estado
+3. Geração da URL pré-assinada
+4. Exibição da URL e instruções de uso
+
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--expiration` | `-e` | Horas até a URL expirar (padrão: 24) |
+
+**Exemplos:**
+```bash
+# URL válida por 24 horas (padrão)
+workstate share
+
+# URL válida por 48 horas
+workstate share --expiration 48
+workstate share -e 48
+```
+
+
+### `download-pre-signed`
+**Funcionalidade:** Baixa e restaura um estado do projeto usando uma URL pré-assinada compartilhada.
+
+**Argumentos:**
+| Argumento | Descrição |
+|-----------|-----------|
+| `base_url` | URL base sem assinatura ou expiração |
+| `signature` | Parte da assinatura da URL pré-assinada |
+| `expires` | Timestamp de expiração da URL pré-assinada |
+
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--no-extract` | - | Não extrai o arquivo ZIP após o download |
+| `--output` | `-o` | Caminho personalizado para o arquivo baixado |
+
+**Exemplos:**
+```bash
+# Download e extração automática
+workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" "signature123" "1234567890"
+
+# Apenas download sem extração
+workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" "signature123" "1234567890" --no-extract
+
+# Download para caminho específico
+workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" "signature123" "1234567890" --output ./downloads/project.zip
+```
+
+
+### `list`
+**Funcionalidade:** Lista estados salvos no S3 com informações detalhadas.
+
+**Informações exibidas:**
+- Nome do arquivo
+- Tamanho
+- Data de modificação
+- Ordenação por data (mais recente primeiro)
 
 </details>
 
