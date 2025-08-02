@@ -1,8 +1,21 @@
-# Workstate
+<p align="center">
+<pre>
+██╗    ██╗ ██████╗ ██████╗ ██╗  ██╗███████╗████████╗ █████╗ ████████╗███████╗
+██║    ██║██╔═══██╗██╔══██╗██║ ██╔╝██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██╔════╝
+██║ █╗ ██║██║   ██║██████╔╝█████╔╝ ███████╗   ██║   ███████║   ██║   █████╗  
+██║███╗██║██║   ██║██╔══██╗██╔═██╗ ╚════██║   ██║   ██╔══██║   ██║   ██╔══╝  
+╚███╔███╔╝╚██████╔╝██║  ██║██║  ██╗███████║   ██║   ██║  ██║   ██║   ███████╗
+╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚══════╝
+            🏠 Dev Environment ──▶ ☁️ AWS S3 ──▶ 🌍 Anywhere
+</pre>
+</p>
 
 **Ferramenta de Gerenciamento de Ambiente de Desenvolvimento Portátil**
 
 Workstate é uma poderosa ferramenta CLI que permite aos desenvolvedores preservar e restaurar o estado completo de seus ambientes de desenvolvimento em diferentes máquinas. Diferentemente dos sistemas de controle de versão que focam no código-fonte, o Workstate captura tudo que torna seu ambiente de desenvolvimento único - configurações, bancos de dados locais, configurações de IDEs, variáveis de ambiente e muito mais.
+
+
+
 
 ## 🎯 Qual Problema Resolve?
 
@@ -444,7 +457,9 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 - Diferenças de terminação de linha são preservadas como estão
 - Links simbólicos podem não funcionar entre diferentes sistemas operacionais
 
-## 🆘 Solução de Problemas
+
+<details>
+  <summary><h2>🆘 Solução de Problemas</h2></summary>
 
 ### Problemas Comuns
 
@@ -466,7 +481,8 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 - Use `workstate config` para verificar suas configurações atuais
 - Re-execute `workstate configure` para atualizar credenciais
 
----
+</details>
+
 
 ## ⭐ Apoie o Projeto
 
