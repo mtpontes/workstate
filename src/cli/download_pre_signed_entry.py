@@ -3,11 +3,11 @@ from rich.console import Console
 
 from src.views import config_view
 from src.utils.utils import handle_error
-from src.commands.download_url_command import DownloadUrlCommandImpl
+from src.commands.download_pre_signed_command import DownloadPreSignedCommandImpl
 
 
 def register(app: typer, console: Console, config_view: config_view):
-    @app.command("download-url", help="Downloads a project state from a shared pre-signed URL")
+    @app.command("download-pre-signed", help="Downloads a project state from a shared pre-signed URL")
     def download_from_parts(
         base_url: str = typer.Argument(..., help="Base URL without signature or expires"),
         signature: str = typer.Argument(..., help="Signature part of the pre-signed URL"),
@@ -57,7 +57,7 @@ def register(app: typer, console: Console, config_view: config_view):
         full_url = f"{base_url}&Signature={signature}&Expires={expires}"
 
         try:
-            DownloadUrlCommandImpl(console=console, url=full_url, extract=not no_extract, output_path=output).execute()
+            DownloadPreSignedCommandImpl(console=console, url=full_url, extract=not no_extract, output_path=output).execute()
         except KeyboardInterrupt:
             console.print("\n[yellow]Download cancelled by user[/yellow]")
             raise typer.Exit(0)
