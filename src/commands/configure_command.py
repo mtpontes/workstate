@@ -15,11 +15,11 @@ import typer
 from rich.console import Console
 
 from src.utils import utils
-from src.api.commands.command import CommandI
+from src.commands.command import CommandI
 from src.model.aws_credentials import AWSCredentials
 from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
-from src.api.prompters.aws_credentials_setup_prompter import AWSCredentialsSetupPrompter
+from src.prompts.aws_credentials_setup_prompter import AWSCredentialsSetupPrompter
 from src.exception.credentials_validation_exception import CredentialsValidationException
 
 

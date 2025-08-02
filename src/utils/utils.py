@@ -9,8 +9,8 @@ Functions:
 """
 
 import typer
-from rich.prompt import Confirm
 from rich.console import Console
+from rich.prompt import Confirm
 
 from src.constants.constants import DOT_ZIP
 

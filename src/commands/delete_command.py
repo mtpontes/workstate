@@ -1,8 +1,8 @@
 from rich.console import Console
 
 from src.services import state_service
-from src.api.commands.command import CommandI
-from src.api.prompters.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.commands.command import CommandI
+from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
 class DeleteCommandImpl(CommandI):

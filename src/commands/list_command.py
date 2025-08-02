@@ -15,9 +15,9 @@ from rich.table import Table
 from rich.console import Console
 from mypy_boto3_s3.service_resource import ObjectSummary
 
-from src.api.views import list_view
+from src.views import list_view
 from src.services import state_service
-from src.api.commands.command import CommandI
+from src.commands.command import CommandI
 
 
 class ListCommandImpl(CommandI):

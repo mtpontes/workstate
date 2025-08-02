@@ -19,8 +19,8 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.console import Console
 
-from src.api.views import config_view
-from src.api.commands.command import CommandI
+from src.views import config_view
+from src.commands.command import CommandI
 from src.constants.constants import DATE_PATTERN
 from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO

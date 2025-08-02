@@ -11,8 +11,8 @@ from rich.text import Text
 from rich.console import Console
 
 from src.services import state_service
-from src.api.views import share_info_view
-from src.api.prompters.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.views import share_info_view
+from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
 class ShareCommandImpl:

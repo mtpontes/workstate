@@ -20,7 +20,6 @@ from typing import Final
 
 from src.templates.code_tool import CodeTool
 
-
 TEMPLATES_WORKSTATE: Final[dict[CodeTool, str]] = {
     CodeTool.NODE: """
 # Node.js - Ignore source code and static configs, keep environment

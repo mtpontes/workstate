@@ -5,9 +5,9 @@ from rich import box
 from rich.table import Table
 from rich.panel import Panel
 
-from src.services.config_service import ConfigService
-from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, DATE_PATTERN, REGION, SECRET_ACCESS_KEY
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
+from src.services.config_service import ConfigService
 
 
 def configurations_table(credentials: AWSCredentialsDTO) -> Table:

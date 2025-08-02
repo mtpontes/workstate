@@ -16,8 +16,8 @@ from pathlib import Path
 from rich.console import Console
 
 from src.utils import utils
-from src.api.commands.command import CommandI
-from src.services import state_service, file_service
+from src.services import file_service, state_service
+from src.commands.command import CommandI
 
 
 class SaveCommandImpl(CommandI):

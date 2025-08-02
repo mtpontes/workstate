@@ -18,8 +18,8 @@ from rich.console import Console
 
 from src.utils import utils
 from src.services import file_service
-from src.api.views import status_view
-from src.api.commands.command import CommandI
+from src.views import status_view
+from src.commands.command import CommandI
 
 
 class StatusCommandImpl(CommandI):

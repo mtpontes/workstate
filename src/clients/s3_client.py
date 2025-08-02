@@ -1,5 +1,7 @@
 import boto3
+from mypy_boto3_s3.client import S3Client
 from mypy_boto3_s3.service_resource import Bucket
+
 
 from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
@@ -17,7 +19,7 @@ def create_s3_resource() -> Bucket:
     return s3_resource.Bucket(credentials.bucket_name)
 
 
-def create_s3_client() -> Bucket:
+def create_s3_client() -> S3Client:
     """Creates S3 resource with proper configuration"""
     credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
     return boto3.client(

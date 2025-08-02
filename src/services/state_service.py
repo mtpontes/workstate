@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import Iterable
 
-from mypy_boto3_s3.service_resource import ObjectSummary, Bucket
+from mypy_boto3_s3.service_resource import Bucket, ObjectSummary
 
 from src.clients import s3_client
-from src.services.config_service import ConfigService
 from src.constants.constants import DOT_ZIP, DOWNLOADS
+from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 

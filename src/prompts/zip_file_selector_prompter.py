@@ -21,7 +21,7 @@ from mypy_boto3_s3.service_resource import ObjectSummary
 from src.utils import utils
 from src.services import state_service
 from src.constants.constants import DATE_PATTERN, SPACE
-from src.api.prompters.string_prompter import StringPrompterI
+from src.prompts.string_prompter import StringPrompterI
 
 
 class ZipFileSelectorPrompter(StringPrompterI):
