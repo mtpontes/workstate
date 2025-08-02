@@ -1,7 +1,7 @@
 import boto3
 
+from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, DEFAULT_AWS_REGION, REGION, SECRET_ACCESS_KEY
 from src.exception.credentials_validation_exception import CredentialsValidationException
-from src.constants.constants import ACCESS_KEY_ID, BUCKET_NAME, REGION, SECRET_ACCESS_KEY, DEFAULT_AWS_REGION
 
 
 class AWSCredentials:

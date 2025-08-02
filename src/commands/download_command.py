@@ -12,11 +12,12 @@ temporary after successful extraction.
 """
 
 from pathlib import Path
+
 from rich.console import Console
 
-from src.api.commands.command import CommandI
+from src.commands.command import CommandI
 from src.services import file_service, state_service
-from src.api.prompters.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
 class DownloadCommandImpl(CommandI):

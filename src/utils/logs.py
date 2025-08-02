@@ -1,7 +1,7 @@
 import sys
 import logging
-from datetime import UTC, datetime
 from pathlib import Path
+from datetime import UTC, datetime
 
 # Directory where the .py or .exe is located
 if getattr(sys, "frozen", False):

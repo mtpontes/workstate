@@ -15,8 +15,8 @@ from rich.text import Text
 from rich.console import Console
 
 from src.services import file_service
-from src.api.commands.command import CommandI
 from src.templates.code_tool import CodeTool
+from src.commands.command import CommandI
 
 
 class InitCommandImpl(CommandI):

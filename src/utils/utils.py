@@ -8,6 +8,10 @@ Functions:
         Formats the size in bytes to a readable unit (KB, MB, GB, etc.).
 """
 
+import typer
+from rich.console import Console
+from rich.prompt import Confirm
+
 from src.constants.constants import DOT_ZIP
 
 
@@ -32,3 +36,43 @@ def format_error_message(error: Exception = None) -> str:
         return "\n[red]Error:[/red]\n"
     else:
         return f"\n[red]Error:[/red] {error}\n"
+
+
+def handle_error(console: Console, e):
+    message: str = format_error_message(e)
+    console.print(message)
+    raise typer.Exit(1)
+
+
+def confirm_action(console: Console, message: str, default: bool = False) -> bool:
+    """Ask user for yes/no confirmation.
+
+    Args:
+        console: Rich console instance for output
+        message: The confirmation message to display
+        default: Default value if user just presses Enter (default: False)
+
+    Returns:
+        bool: True if user confirms (yes), False otherwise (no)
+
+    Examples:
+        >>> console = Console()
+        >>> if confirm_action(console, "Delete this file?"):
+        ...     print("File deleted")
+        ... else:
+        ...     print("Operation cancelled")
+
+        >>> # With default value
+        >>> if confirm_action(console, "Continue?", default=True):
+        ...     print("Continuing...")
+    """
+    try:
+        return Confirm.ask(message, console=console, default=default)
+    except Exception:
+        return default
+
+
+def destructure_pre_signed_url(url: str) -> tuple[str, str, str]:
+    """Return base url and args Signature and Expires"""
+    url_split: list[str] = url.split("&")
+    return (url_split[0], url_split[1].split("=")[1], url_split[2].split("=")[1])

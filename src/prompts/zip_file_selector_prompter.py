@@ -21,7 +21,7 @@ from mypy_boto3_s3.service_resource import ObjectSummary
 from src.utils import utils
 from src.services import state_service
 from src.constants.constants import DATE_PATTERN, SPACE
-from src.api.prompters.string_prompter import StringPrompterI
+from src.prompts.string_prompter import StringPrompterI
 
 
 class ZipFileSelectorPrompter(StringPrompterI):
@@ -31,7 +31,7 @@ class ZipFileSelectorPrompter(StringPrompterI):
 
     def prompt(self) -> str:
         with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
-            zip_files: list[ObjectSummary] = self.state_service.get_state_files()
+            zip_files: list[ObjectSummary] = self.state_service.list_states()
         if not zip_files:
             self.console.print("[yellow]No ZIP files found in the S3 bucket.[/yellow]")
             raise typer.Exit(0)

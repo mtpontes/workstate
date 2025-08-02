@@ -15,15 +15,11 @@ Class:
 
 import json
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
-from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
+from src.constants.constants import AWS, READ_OPERATOR, WRITE_OPERATOR
 from src.model.aws_credentials import AWSCredentials
-from src.constants.constants import (
-    AWS,
-    READ_OPERATOR,
-    WRITE_OPERATOR,
-)
+from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
 class ConfigService:

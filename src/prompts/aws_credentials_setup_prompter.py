@@ -17,9 +17,9 @@ from rich.text import Text
 from rich.panel import Panel
 from rich.console import Console
 
+from src.constants.constants import BLANK, DEFAULT_AWS_REGION
 from src.services.config_service import ConfigService
-from src.constants.constants import DEFAULT_AWS_REGION, BLANK
-from src.api.prompters.string_prompter import StringPrompterI
+from src.prompts.string_prompter import StringPrompterI
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
