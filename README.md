@@ -17,7 +17,7 @@ Workstate é uma poderosa ferramenta CLI que permite aos desenvolvedores preserv
 
 
 
-## 🎯 Qual Problema Resolve?
+## Qual Problema Resolve?
 
 Você já precisou:
 - Continuar trabalhando em um projeto de uma máquina diferente com exatamente a mesma configuração?
@@ -27,7 +27,7 @@ Você já precisou:
 
 O Workstate resolve esses problemas criando snapshots comprimidos do seu ambiente de desenvolvimento e armazenando-os de forma segura no AWS S3.
 
-## 🚀 Principais Funcionalidades
+## Principais Funcionalidades
 
 - **Seleção Inteligente de Arquivos**: Usa arquivos `.workstateignore` (similar ao `.gitignore`) para definir o que deve ser incluído no snapshot do ambiente
 - **Interface Interativa**: CLI amigável com formatação rica e menus interativos
@@ -37,7 +37,7 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 - **Templates Pré-construídos**: Vem com templates otimizados para ferramentas de desenvolvimento populares (Python, Node.js, Java, React, Angular, etc.)
 - **Multiplataforma**: Funciona no Windows, macOS e Linux
 
-## 📋 O Que É Capturado
+## O Que É Capturado
 Você é quem manda o que será capturado, mas a solução foi pensada para capturar tudo que o controle de versão tradicional ignora.
 
 Exemplos:
@@ -51,7 +51,7 @@ Exemplos:
 - **Dados de Desenvolvimento**: Dados de teste, arquivos mock, assets locais
 
 <details>
-  <summary><h2>🔧 Instalação</h2></summary>
+  <summary><h2>Instalação</h2></summary>
 
 Se você for utilizar o `workstate.exe` ignore esse tópico.
 
@@ -85,7 +85,7 @@ pip install -r requirements.txt
 
 
 <details>
-  <summary><h2>⚙️ Configuração AWS e Permissões</h2></summary>
+  <summary><h2>Configuração AWS e Permissões</h2></summary>
 
 ### 1. Criar uma Conta AWS
 
@@ -134,7 +134,7 @@ Se você não tem uma conta AWS, crie uma em [aws.amazon.com](https://aws.amazon
 </details>
 
 <details>
-  <summary><h2>🎯 Início Rápido</h2></summary>
+  <summary><h2>Início Rápido</h2></summary>
 
 ### 1. Configurar Credenciais AWS
 
@@ -202,7 +202,7 @@ workstate download --download-only
 
 
 <details>
-  <summary><h2>📖 Referência de Comandos</h2></summary>
+  <summary><h2>Referência de Comandos</h2></summary>
 
 ### Comandos Disponíveis
 
@@ -383,7 +383,7 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 </details>
 
 <details>
-  <summary><h2>📁 Arquivo .workstateignore</h2></summary>
+  <summary><h2>Arquivo .workstateignore</h2></summary>
 
 O arquivo `.workstateignore` funciona de forma similar ao `.gitignore`, mas define o que **ignorado** no snapshot do seu estado.
 A ideia é ignorar tudo que for referente ao repositório. Ele suporta:
@@ -414,7 +414,7 @@ logs/
 
 </details>
 
-## 🔐 Considerações de Segurança
+## Considerações de Segurança
 
 ### Armazenamento de Credenciais
 - Credenciais são armazenadas localmente em `~/.workstate/config.json`
@@ -435,7 +435,7 @@ logs/
 - Seja consciente sobre dados sensíveis no seu ambiente de desenvolvimento
 
 
-## ⚠️ Notas Importantes
+## Notas Importantes
 
 ### O Que NÃO Incluir
 
@@ -459,7 +459,7 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 
 
 <details>
-  <summary><h2>🆘 Solução de Problemas</h2></summary>
+  <summary><h2>Solução de Problemas</h2></summary>
 
 ### Problemas Comuns
 
@@ -484,6 +484,6 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 </details>
 
 
-## ⭐ Apoie o Projeto
+## Apoie o Projeto
 
 Se este projeto foi útil para você ou para sua equipe, considere deixar uma **estrela** no repositório do GitHub! Isso ajuda outras pessoas a descobrirem o Workstate e me motiva a continuar melhorando a ferramenta.
