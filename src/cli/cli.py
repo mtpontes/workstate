@@ -58,7 +58,12 @@ from src.cli import (
 
 
 console = Console()
-app = typer.Typer(name="workstate", help="Portable development environment management tool", add_completion=False)
+app = typer.Typer(
+    name="workstate",
+    help="Portable development environment management tool",
+    add_completion=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 
 config.register(app, console, config_view)
 configure_entry.register(app, console)
