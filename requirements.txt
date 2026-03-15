@@ -5,3 +5,4 @@ boto3-stubs[essential]
 rich
 InquirerPy
 requests
+pyperclip

@@ -13,6 +13,7 @@ from rich.console import Console
 from src.services import state_service
 from src.views import share_info_view
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.utils.clipboard_utils import copy_to_clipboard
 
 
 class ShareCommandImpl:
@@ -57,3 +58,6 @@ class ShareCommandImpl:
 
         instructions: Text = self.view.usage_instructions(presigned_url, self.expiration_hours)
         self.console.print(instructions)
+
+        # Copy to clipboard
+        copy_to_clipboard(presigned_url, self.console)
