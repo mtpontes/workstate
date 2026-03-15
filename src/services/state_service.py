@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from mypy_boto3_s3.service_resource import Bucket, ObjectSummary
 
@@ -25,12 +25,13 @@ def list_states() -> list[ObjectSummary]:
     return only_zip_files(s3_objects)
 
 
-def download_state_file(object_name: str) -> Path:
+def download_state_file(object_name: str, callback: Callable[[int], None] = None) -> Path:
     """
     Download a specific `.zip` file from the S3 bucket to the local `downloads` directory.
 
     Args:
         object_name (str): The key (filename) of the object to download from S3.
+        callback (Callable[[int], None], optional): Progress callback function for Boto3.
 
     Returns:
         Path: The local path where the file was saved.
@@ -39,20 +40,21 @@ def download_state_file(object_name: str) -> Path:
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     bucket_client: Bucket = s3_client.create_s3_resource()
-    bucket_client.download_file(object_name, str(destination))
+    bucket_client.download_file(object_name, str(destination), Callback=callback)
 
     return destination
 
 
-def save_state_file(zip_file: Path, object_name: str) -> None:
+def save_state_file(zip_file: Path, object_name: str, callback: Callable[[int], None] = None) -> None:
     """
     Upload a local `.zip` file to the S3 bucket with the given object name.
 
     Args:
         zip_file (Path): Path to the local `.zip` file to upload.
         object_name (str): The target key (filename) for the object in S3.
+        callback (Callable[[int], None], optional): Progress callback function for Boto3.
     """
-    s3_client.create_s3_resource().upload_file(str(zip_file), object_name)
+    s3_client.create_s3_resource().upload_file(str(zip_file), object_name, Callback=callback)
 
 
 def delete_state_file(s3_object_name: str) -> None:

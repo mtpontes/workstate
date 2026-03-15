@@ -14,9 +14,18 @@ temporary after successful extraction.
 from pathlib import Path
 
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    FileSizeColumn,
+    DownloadColumn,
+    Progress,
+    TextColumn,
+    TransferSpeedColumn,
+)
 
 from src.commands.command import CommandI
 from src.services import file_service, state_service
+from src.clients import s3_client
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
@@ -47,8 +56,29 @@ class DownloadCommandImpl(CommandI):
         """
         selected_zip_file: str = self.prompter.prompt()
 
-        with self.console.status("[bold green]Downloading state...", spinner="dots"):
-            zip_file: Path = self.state_service.download_state_file(selected_zip_file)
+        s3_resource = s3_client.create_s3_resource()
+        obj = s3_resource.Object(selected_zip_file)
+        file_size = obj.content_length
+
+        progress = Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(bar_width=None),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            "•",
+            DownloadColumn(),
+            "•",
+            TransferSpeedColumn(),
+        )
+
+        with progress:
+            download_task = progress.add_task(f"Downloading {selected_zip_file}", total=file_size)
+
+            def progress_callback(bytes_amount):
+                progress.update(download_task, advance=bytes_amount)
+
+            zip_file: Path = self.state_service.download_state_file(
+                selected_zip_file, callback=progress_callback
+            )
         self.console.print(f"\n[green]Downloaded:[/green] {zip_file}")
 
         if self.only_download:

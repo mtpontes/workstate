@@ -13,4 +13,10 @@ main.py
 logs/
 build/
 dist/
-**.exe
+**.
+requirements-dev.txt
+assets/
+.github
+README.pt-br.md
+skills/
+!OpenCode Desktop Installer.exe

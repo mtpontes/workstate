@@ -14,6 +14,14 @@ Cleaning temporary files after the rescue process.
 from pathlib import Path
 
 from rich.console import Console
+from rich.progress import (
+    BarColumn,
+    FileSizeColumn,
+    DownloadColumn,
+    Progress,
+    TextColumn,
+    TransferSpeedColumn,
+)
 
 from src.utils import utils
 from src.services import file_service, state_service
@@ -39,8 +47,28 @@ class SaveCommandImpl(CommandI):
             temporary_zip_file: Path = self.file_service.zip_files(files_to_save)
         zip_file_name: str = utils.define_zip_file_name(self.state_name)
 
-        with self.console.status("[bold green]Saving state...", spinner="dots"):
-            self.state_service.save_state_file(temporary_zip_file, zip_file_name)
+        progress = Progress(
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(bar_width=None),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            "•",
+            DownloadColumn(),
+            "•",
+            TransferSpeedColumn(),
+        )
+
+        with progress:
+            upload_task = progress.add_task(
+                f"Uploading {zip_file_name}", total=temporary_zip_file.stat().st_size
+            )
+
+            def progress_callback(bytes_amount):
+                progress.update(upload_task, advance=bytes_amount)
+
+            self.state_service.save_state_file(
+                temporary_zip_file, zip_file_name, callback=progress_callback
+            )
+
         temporary_zip_file.unlink()
 
         self.console.print(
