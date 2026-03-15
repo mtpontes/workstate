@@ -60,6 +60,7 @@ If you are using `workstate.exe`, ignore this topic.
 - **typer**: CLI Framework
 - **rich**: Terminal formatting
 - **boto3**: AWS SDK for Python
+- **pyperclip**: Cross-platform clipboard support
 
 ### Configuration Files
 
@@ -210,7 +211,7 @@ workstate download --download-only
 | `delete` | Deletes a saved state in AWS S3 | - | - |
 | `list` | Lists all available states in AWS S3 | - | - |
 | `download-pre-signed` | Restores a saved state from AWS S3 using a pre-signed URL | `base_url`, `signature`, `expires`: Pre-signed URL components | `--no-extract`, `--output, -o` |
-| `share` | Generates a pre-signed AWS S3 URL to allow downloading a state without authentication | - | `--expiration, -e`: Hours until URL expires (default: 24) |
+| `share` | Generates a pre-signed AWS S3 URL and copies it to the clipboard | - | `--expiration, -e`: Hours until URL expires (default: 24) |
 
 ### Command Details
 
@@ -311,7 +312,7 @@ workstate save "project with spaces"
 
 
 ### `share`
-**Functionality:** Generates a pre-signed URL to share a project state without AWS credentials.
+**Functionality:** Generates a pre-signed URL to share a project state and automatically copies it to the system clipboard.
 
 **Process:**
 1. Lists available states
@@ -448,6 +449,9 @@ Be careful not to include in your `.workstateignore` (meaning, do not capture):
 - File paths are handled using Python's `pathlib` for cross-platform compatibility
 - Line ending differences are preserved as is
 - Symlinks might not work across different operating systems
+
+### Help Alias
+- You can use `-h` as a shorthand alias for `--help` in any command.
 
 
 <details>

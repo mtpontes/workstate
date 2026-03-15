@@ -59,6 +59,7 @@ Se você for utilizar o `workstate.exe` ignore esse tópico.
 - **typer**: Framework para CLIs
 - **rich**: Formatação de terminal
 - **boto3**: SDK AWS para Python
+- **pyperclip**: Suporte multiplataforma para área de transferência
 
 ### Arquivos de Configuração
 
@@ -210,7 +211,7 @@ workstate download --download-only
 | `delete` | Exclui um estado salvo no AWS S3 | - | - |
 | `list` | Lista todos os estados disponíveis no AWS S3 | - | - |
 | `download-pre-signed` | Restaura um estado salvo do AWS S3 a partir de uma URL pré-assinada | `base_url`, `signature`, `expires`: Componentes da URL pré-assinada | `--no-extract`, `--output, -o` |
-| `share` | Gera uma URL pré-assinada do AWS S3 para permitir o download de um estado sem necessidade de autenticação | - | `--expiration, -e`: Horas até a URL expirar (padrão: 24) |
+| `share` | Gera uma URL pré-assinada do AWS S3 e a copia para a área de transferência | - | `--expiration, -e`: Horas até a URL expirar (padrão: 24) |
 
 ### Detalhamento dos Comandos
 
@@ -311,7 +312,7 @@ workstate save "projeto com espaços"
 
 
 ### `share`
-**Funcionalidade:** Gera uma URL pré-assinada para compartilhar um estado do projeto sem necessidade de credenciais AWS.
+**Funcionalidade:** Gera uma URL pré-assinada personalizada para compartilhar um estado do projeto e a copia automaticamente para a área de transferência do sistema.
 
 **Processo:**
 1. Lista estados disponíveis
@@ -449,6 +450,9 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 - Caminhos de arquivos são tratados usando `pathlib` do Python para compatibilidade multiplataforma
 - Diferenças de terminação de linha são preservadas como estão
 - Links simbólicos podem não funcionar entre diferentes sistemas operacionais
+
+### Atalho de Ajuda
+- Você pode usar `-h` como um atalho para `--help` em qualquer comando.
 
 
 <details>
