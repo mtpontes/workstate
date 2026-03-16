@@ -24,10 +24,12 @@ Workstate solves these problems by creating compressed snapshots of your develop
 ## Key Features
 
 - **Smart File Selection**: Uses `.workstateignore` files (similar to `.gitignore`) to define what should be included in the environment snapshot
-- **Interactive Interface**: Friendly CLI with rich formatting and interactive menus
+- **Interactive Interface**: Friendly CLI with rich formatting, interactive menus, and **fuzzy search** support
+- **Real-time Progress**: Visual feedback for uploads and downloads with progress bars
+- **Dry-Run Mode**: Simulate backups to verify file selection and total size before uploading
 - **Selective Restore**: Download states without unpacking or restore full environments
 - **AWS S3 Integration**: Secure cloud storage for your development states
-- **Sharing**: Share/import states using temporary pre-signed AWS S3 URLs
+- **Sharing**: Share/import states using temporary pre-signed AWS S3 URLs and automatic clipboard copying
 - **Pre-built Templates**: Comes with optimized templates for popular development tools (Python, Node.js, Java, React, Angular, etc.)
 - **Cross-platform**: Works on Windows, macOS, and Linux
 
@@ -172,7 +174,8 @@ This shows all files and directories that will be included in the state snapshot
 ```bash
 workstate save "my-project-v1"
 ```
-This zips all mapped files (the same ones listed in the status command) and uploads them to AWS S3.
+This zips all mapped files (the same ones listed in the status command) and uploads them to AWS S3. You can use `--dry-run` to simulate the process.
+
 
 ### 5. List Available States
 
@@ -206,10 +209,10 @@ workstate download --download-only
 | `configure` | Configures AWS credentials | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
 | `init` | Initializes a new Workstate project with `.workstateignore` file | - | `--tool, -t`: Tool type (default: `generic`) |
 | `status` | Shows files tracked by Workstate | - | - |
-| `save` | Saves the current project state to AWS S3 | `state_name`: Unique name for the state | - |
-| `download` | Restores a saved state from AWS S3 | - | `--only-download`: Only downloads without extracting |
-| `delete` | Deletes a saved state in AWS S3 | - | - |
-| `list` | Lists all available states in AWS S3 | - | - |
+| `save` | Saves the current project state to AWS S3 | `state_name`: Unique name for the state | `--dry-run`: Simulates without uploading |
+| `download` | Restores a saved state from AWS S3 | - | `--only-download`: Only downloads without extracting, `--interactive, -i`: Force interactive mode |
+| `delete` | Deletes a saved state in AWS S3 | - | `--interactive, -i`: Force interactive mode |
+| `list` | Lists all available states in AWS S3 | - | `--interactive, -i`: Opens interactive selector |
 | `download-pre-signed` | Restores a saved state from AWS S3 using a pre-signed URL | `base_url`, `signature`, `expires`: Pre-signed URL components | `--no-extract`, `--output, -o` |
 | `share` | Generates a pre-signed AWS S3 URL and copies it to the clipboard | - | `--expiration, -e`: Hours until URL expires (default: 24) |
 
@@ -304,11 +307,10 @@ workstate save "project with spaces"
 ### `delete`
 **Functionality:** Deletes a saved state in AWS S3 interactively.
 
-**Process:**
-1. Lists available states
-2. Interactive selection of state to delete
-3. Deletion confirmation
-4. Removal of file from S3
+**Options:**
+| Option | Abbreviation | Description |
+|--------|--------------|-------------|
+| `--interactive` | `-i` | Interactive mode (default: true) |
 
 
 ### `share`

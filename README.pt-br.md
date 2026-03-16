@@ -23,10 +23,12 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 ## Principais Funcionalidades
 
 - **Seleção Inteligente de Arquivos**: Usa arquivos `.workstateignore` (similar ao `.gitignore`) para definir o que deve ser incluído no snapshot do ambiente
-- **Interface Interativa**: CLI amigável com formatação rica e menus interativos
+- **Interface Interativa**: CLI amigável com formatação rica, menus interativos e **busca fuzzy**
+- **Progresso em Tempo Real**: Feedback visual em tempo real durante o upload e download
+- **Modo Dry-Run**: Simule o backup para verificar arquivos e tamanho total antes de subir para o S3
 - **Restauração Seletiva**: Baixe estados sem descompactar ou restaure ambientes completos
 - **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento
-- **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias do AWS S3
+- **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias e cópia automática para o clipboard
 - **Templates Pré-construídos**: Vem com templates otimizados para ferramentas de desenvolvimento populares (Python, Node.js, Java, React, Angular, etc.)
 - **Multiplataforma**: Funciona no Windows, macOS e Linux
 
@@ -172,7 +174,8 @@ Isso mostra todos os arquivos e diretórios que serão incluídos no snapshot do
 ```bash
 workstate save "meu-projeto-v1"
 ```
-Isso compacta todos os arquivos mapeados (os mesmos listados no comando de status) em .zip e carrega para o AWS S3.
+Isso compacta todos os arquivos mapeados em .zip e carrega para o AWS S3. Use `--dry-run` para simular o processo.
+
 
 ### 5. Listar Estados Disponíveis
 
@@ -206,10 +209,10 @@ workstate download --download-only
 | `configure` | Configura credenciais AWS | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
 | `init` | Inicializa um novo projeto Workstate com arquivo `.workstateignore` | - | `--tool, -t`: Tipo de ferramenta (padrão: `generic`) |
 | `status` | Mostra arquivos rastreados pelo Workstate | - | - |
-| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | - |
-| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`: Apenas baixa sem extrair |
-| `delete` | Exclui um estado salvo no AWS S3 | - | - |
-| `list` | Lista todos os estados disponíveis no AWS S3 | - | - |
+| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | `--dry-run`: Simulação sem upload |
+| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`: Apenas baixa sem extrair, `--interactive, -i`: Força modo interativo |
+| `delete` | Exclui um estado salvo no AWS S3 | - | `--interactive, -i`: Força modo interativo |
+| `list` | Lista todos os estados disponíveis no AWS S3 | - | `--interactive, -i`: Abre selecionador interativo |
 | `download-pre-signed` | Restaura um estado salvo do AWS S3 a partir de uma URL pré-assinada | `base_url`, `signature`, `expires`: Componentes da URL pré-assinada | `--no-extract`, `--output, -o` |
 | `share` | Gera uma URL pré-assinada do AWS S3 e a copia para a área de transferência | - | `--expiration, -e`: Horas até a URL expirar (padrão: 24) |
 
