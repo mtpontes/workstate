@@ -40,6 +40,7 @@ class SaveCommandImpl(CommandI):
         dry_run: bool = False,
         encrypt: bool = False,
         password: str = None,
+        force: bool = False,
     ) -> None:
         self.state_name = state_name
         self.console = console
@@ -48,11 +49,32 @@ class SaveCommandImpl(CommandI):
         self.dry_run = dry_run
         self.encrypt = encrypt
         self.password = password
+        self.force = force
+
 
     def execute(self) -> None:
         files_to_save: list[Path] = self.file_service.select_files()
+
+        # Sensitive files scan
+        sensitive_files = self.file_service.scan_for_sensitive_files(files_to_save)
+        if sensitive_files and not self.force:
+            self.console.print(
+                Panel(
+                    "[bold red]DANGER:[/bold red] Sensitive files detected in the backup list!\n\n"
+                    + "\n".join([f"- [yellow]{f.relative_to(Path.cwd())}[/yellow]" for f in sensitive_files])
+                    + "\n\n[bold white]Uploading these files to the cloud can be dangerous.[/bold white]",
+                    title="Security Warning",
+                    border_style="red",
+                )
+            )
+            import typer
+            if not typer.confirm("Do you want to proceed anyway?", default=False):
+                self.console.print("[red]Operation aborted by user.[/red]")
+                return
+
         total_size_bytes = self.file_service.calculate_total_files_in_bytes(files_to_save)
         formatted_size = utils.format_file_size(total_size_bytes)
+
 
         if total_size_bytes > 500 * 1024 * 1024:
             self.console.print(

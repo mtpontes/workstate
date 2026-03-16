@@ -22,10 +22,44 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import pathspec
 
-from src.constants.constants import DOT_ZIP, IGNORE_FILE, READ_OPERATOR, WRITE_BINARY_OPERATOR, WRITE_OPERATOR
+from src.constants.constants import (
+    DOT_ZIP,
+    IGNORE_FILE,
+    READ_OPERATOR,
+    SENSITIVE_PATTERNS,
+    WRITE_BINARY_OPERATOR,
+    WRITE_OPERATOR,
+)
 from src.templates.code_tool import CodeTool
 from src.templates.workstate_templates import TEMPLATES_WORKSTATE
 from src.utils.logs import log
+
+
+def scan_for_sensitive_files(files: list[Path]) -> list[Path]:
+    """
+    Scans the list of files for patterns known to be sensitive (credentials, private keys, etc.).
+
+    Args:
+        files (list[Path]): List of files to scan.
+
+    Returns:
+        list[Path]: List of sensitive files found.
+    """
+    sensitive_files = []
+    for file in files:
+        # Check if the filename or any part of the path matches the sensitive patterns
+        # We check the relative path to the current directory
+        try:
+            relative_path = str(file.relative_to(Path.cwd()))
+        except ValueError:
+            relative_path = str(file)
+
+        for pattern in SENSITIVE_PATTERNS:
+            if pattern in relative_path:
+                sensitive_files.append(file)
+                break
+    return sensitive_files
+
 
 
 def create_workstateignore(tool: CodeTool) -> None:

@@ -18,3 +18,12 @@ AWS: Final[str] = "aws"
 BLANK: Final[str] = ""
 SPACE: Final[str] = " "
 DATE_PATTERN: Final[str] = "%Y-%m-%d %H:%M"
+SENSITIVE_PATTERNS: Final[list[str]] = [
+    "id_rsa",
+    ".pem",
+    ".aws/credentials",
+    ".git-credentials",
+    ".env",
+    "credentials.json",
+]
+
