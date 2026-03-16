@@ -15,11 +15,46 @@ from rich.prompt import Confirm
 
 import base64
 import os
+import platform
+import subprocess
+from datetime import datetime
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 
 from src.constants.constants import DOT_ZIP
+
+
+def get_system_info() -> str:
+    """Returns the current operating system name."""
+    return platform.system()
+
+
+def get_git_info() -> dict[str, str]:
+    """Returns the current Git branch and hash if in a Git repository."""
+    try:
+        # Check if it's a git repo
+        subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"], stderr=subprocess.STDOUT)
+        
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.STDOUT).decode().strip()
+        commit_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.STDOUT).decode().strip()
+        
+        return {
+            "Git-Branch": branch,
+            "Git-Hash": commit_hash
+        }
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return {}
+
+
+def get_current_timestamp() -> str:
+    """Returns the current timestamp in ISO format."""
+    return datetime.now().isoformat()
+
+
+def get_project_name() -> str:
+    """Returns the name of the current directory as the project name."""
+    return Path.cwd().name
 
 
 def define_zip_file_name(project_name: str) -> str:

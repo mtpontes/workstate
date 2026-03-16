@@ -9,35 +9,53 @@ from src.services.config_service import ConfigService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
+from src.utils import utils
+
+
+def _get_prefix() -> str:
+    """Returns the S3 prefix for the current project."""
+    return f"{utils.get_project_name()}/"
+
+
 def list_states() -> list[ObjectSummary]:
     """
     Retrieve all `.zip` and `.enc` files from the configured S3 bucket.
+    Includes objects in the current project's prefix and legacy root objects.
 
     Returns:
         list[ObjectSummary]: A list of S3 objects representing state files.
     """
     bucket_client: Bucket = s3_client.create_s3_resource()
-    # Explicitly convert to list to avoid iterator exhaustion issues
+    # List all objects and filter locally to avoid complex S3 Delimiter/Prefix logic issues
     all_objects = list(bucket_client.objects.all())
+    prefix = _get_prefix()
 
-    return [
-        obj for obj in all_objects 
-        if obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")
-    ]
+    filtered_objects = []
+    for obj in all_objects:
+        # Include if it's in the current project's prefix OR it's at the root (legacy)
+        is_in_project = obj.key.startswith(prefix)
+        is_at_root = "/" not in obj.key
+        
+        if (is_in_project or is_at_root) and (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")):
+            filtered_objects.append(obj)
+
+    return filtered_objects
 
 
 def download_state_file(object_name: str, callback: Callable[[int], None] = None) -> Path:
     """
-    Download a specific `.zip` file from the S3 bucket to the local `downloads` directory.
+    Download a specific `.zip` file from the S3 bucket.
 
     Args:
-        object_name (str): The key (filename) of the object to download from S3.
+        object_name (str): The key (filename or prefix/filename) of the object to download.
         callback (Callable[[int], None], optional): Progress callback function for Boto3.
 
     Returns:
         Path: The local path where the file was saved.
     """
-    destination = Path(DOWNLOADS) / object_name
+    # Destination filename should be just the basename
+    local_filename = object_name.split("/")[-1]
+    destination = Path(DOWNLOADS) / local_filename
     destination.parent.mkdir(parents=True, exist_ok=True)
 
     bucket_client: Bucket = s3_client.create_s3_resource()
@@ -46,19 +64,39 @@ def download_state_file(object_name: str, callback: Callable[[int], None] = None
     return destination
 
 
-def save_state_file(zip_file: Path, object_name: str, callback: Callable[[int], None] = None) -> None:
+def save_state_file(
+    zip_file: Path,
+    object_name: str,
+    callback: Callable[[int], None] = None,
+    tags: dict[str, str] = None,
+) -> None:
     """
-    Upload a local `.zip` file to the S3 bucket with the given object name.
+    Upload a local `.zip` file to the S3 bucket inside the project prefix.
 
     Args:
         zip_file (Path): Path to the local `.zip` file to upload.
-        object_name (str): The target key (filename) for the object in S3.
+        object_name (str): The target filename for the object.
         callback (Callable[[int], None], optional): Progress callback function for Boto3.
+        tags (dict[str, str], optional): Dictionary of tags to apply to the S3 object.
     """
-    s3_client.create_s3_resource().upload_file(str(zip_file), object_name, Callback=callback)
+    full_key = f"{_get_prefix()}{object_name}"
+    
+    extra_args = {}
+    if tags:
+        # Boto3 expects tags in 'key1=value1&key2=value2' format for ExtraArgs
+        extra_args["Tagging"] = "&".join([f"{k}={v}" for k, v in tags.items()])
+
+    s3_client.create_s3_resource().upload_file(
+        str(zip_file), full_key, ExtraArgs=extra_args, Callback=callback
+    )
 
 
 def delete_state_file(s3_object_name: str) -> None:
+    """
+    Delete a specific state file from S3.
+    Args:
+        s3_object_name (str): Full key of the object to delete.
+    """
     s3_client.create_s3_resource().Object(s3_object_name).delete()
 
 

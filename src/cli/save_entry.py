@@ -19,6 +19,12 @@ def register(app: typer, console: Console, file_service: file_service, state_ser
         force: bool = typer.Option(
             False, "--force", "-f", help="Ignores warnings about sensitive files"
         ),
+        description: str = typer.Option(
+            None, "--description", "-m", help="Motivo ou descrição do backup"
+        ),
+        tags: list[str] = typer.Option(
+            None, "--tag", help="Tags customizadas no formato key=value"
+        ),
     ) -> None:
         """Saves the current state of the project to AWS S3
 
@@ -67,6 +73,8 @@ def register(app: typer, console: Console, file_service: file_service, state_ser
                 encrypt=encrypt,
                 password=password,
                 force=force,
+                description=description,
+                tags=tags,
             ).execute()
 
 

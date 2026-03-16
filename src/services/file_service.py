@@ -16,6 +16,7 @@ Functions:
     - calculate_total_files_in_bytes(files)
 """
 
+import json
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -102,7 +103,7 @@ def select_files() -> list[Path]:
     return files
 
 
-def zip_files(files: list[Path]) -> Path:
+def zip_files(files: list[Path], metadata: dict = None) -> Path:
     """
     Creates a `.zip` file containing the specified files.
 
@@ -110,6 +111,7 @@ def zip_files(files: list[Path]) -> Path:
 
     Args:
         files(list[Path]): List of files to include in the `.zip`.
+        metadata(dict, optional): Metadata to be saved in a `.metadata.json` file inside the ZIP.
 
     Returns:
         Path: Full path to the created `.zip` file.
@@ -119,6 +121,10 @@ def zip_files(files: list[Path]) -> Path:
         with ZipFile(tmp_file, WRITE_OPERATOR, compression=ZIP_DEFLATED) as zipf:
             for file in files:
                 zipf.write(file, arcname=file.relative_to(root))
+            
+            if metadata:
+                zipf.writestr(".metadata.json", json.dumps(metadata, indent=2))
+                
         tmp_file_path = Path(tmp_file.name)
         return tmp_file_path
 

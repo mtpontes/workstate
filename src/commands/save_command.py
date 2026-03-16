@@ -41,6 +41,8 @@ class SaveCommandImpl(CommandI):
         encrypt: bool = False,
         password: str = None,
         force: bool = False,
+        description: str = None,
+        tags: list[str] = None,
     ) -> None:
         self.state_name = state_name
         self.console = console
@@ -50,6 +52,8 @@ class SaveCommandImpl(CommandI):
         self.encrypt = encrypt
         self.password = password
         self.force = force
+        self.description = description
+        self.tags = tags
 
 
     def execute(self) -> None:
@@ -103,7 +107,29 @@ class SaveCommandImpl(CommandI):
             return
 
         with self.console.status("[bold green]Zipping files...", spinner="dots"):
-            temporary_file_to_upload: Path = self.file_service.zip_files(files_to_save)
+            # Prepare metadata for .metadata.json inside ZIP
+            system_info = utils.get_system_info()
+            git_info = utils.get_git_info()
+            
+            metadata = {
+                "state_name": self.state_name,
+                "description": self.description,
+                "system": system_info,
+                "git": git_info,
+                "timestamp": utils.get_current_timestamp() if hasattr(utils, 'get_current_timestamp') else None
+            }
+            
+            # Process custom tags
+            custom_tags_dict = {}
+            if self.tags:
+                for tag_str in self.tags:
+                    if "=" in tag_str:
+                        key, value = tag_str.split("=", 1)
+                        custom_tags_dict[key.strip()] = value.strip()
+            
+            metadata["custom_tags"] = custom_tags_dict
+
+            temporary_file_to_upload: Path = self.file_service.zip_files(files_to_save, metadata=metadata)
 
         zip_file_name: str = utils.define_zip_file_name(self.state_name)
 
@@ -132,8 +158,18 @@ class SaveCommandImpl(CommandI):
             def progress_callback(bytes_amount):
                 progress.update(upload_task, advance=bytes_amount)
 
+            # Collect metadata for S3 tags
+            s3_tags = {
+                "System": system_info,
+            }
+            s3_tags.update(git_info)
+            if self.description:
+                s3_tags["Description"] = self.description[:255] # S3 tag value limit
+            
+            s3_tags.update(custom_tags_dict)
+
             self.state_service.save_state_file(
-                temporary_file_to_upload, zip_file_name, callback=progress_callback
+                temporary_file_to_upload, zip_file_name, callback=progress_callback, tags=s3_tags
             )
 
         temporary_file_to_upload.unlink()
