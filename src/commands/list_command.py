@@ -29,12 +29,18 @@ class ListCommandImpl(CommandI):
         state_service: state_service,
         prompter: ZipFileSelectorPrompter = None,
         interactive: bool = False,
+        system_filter: str = None,
+        branch_filter: str = None,
+        older_than_filter: str = None,
     ):
         self.console = console
         self.views = views
         self.state_service = state_service
         self.prompter = prompter
         self.interactive = interactive
+        self.system_filter = system_filter
+        self.branch_filter = branch_filter
+        self.older_than_filter = older_than_filter
 
     def execute(self) -> None:
         if self.interactive and self.prompter:
@@ -42,7 +48,11 @@ class ListCommandImpl(CommandI):
             return
 
         with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
-            zip_files: list[ObjectSummary] = self.state_service.list_states()
+            zip_files: list[ObjectSummary] = self.state_service.list_states(
+                system=self.system_filter,
+                branch=self.branch_filter,
+                older_than=self.older_than_filter
+            )
 
         table: Table = self.views.zip_files_table(zip_files)
         self.console.print(table)

@@ -25,7 +25,7 @@ from rich.progress import (
 from rich.table import Table
 from rich.panel import Panel
 
-from src.utils import utils
+from src.utils import utils, system_info
 from src.services import file_service, state_service
 from src.commands.command import CommandI
 
@@ -108,13 +108,13 @@ class SaveCommandImpl(CommandI):
 
         with self.console.status("[bold green]Zipping files...", spinner="dots"):
             # Prepare metadata for .metadata.json inside ZIP
-            system_info = utils.get_system_info()
+            sys_info = system_info.get_system_info()
             git_info = utils.get_git_info()
             
             metadata = {
                 "state_name": self.state_name,
                 "description": self.description,
-                "system": system_info,
+                "system": sys_info,
                 "git": git_info,
                 "timestamp": utils.get_current_timestamp() if hasattr(utils, 'get_current_timestamp') else None
             }
@@ -158,18 +158,28 @@ class SaveCommandImpl(CommandI):
             def progress_callback(bytes_amount):
                 progress.update(upload_task, advance=bytes_amount)
 
-            # Collect metadata for S3 tags
+            # Collect metadata for S3 tags and S3 metadata
             s3_tags = {
-                "System": system_info,
+                "System": sys_info["system"],
             }
-            s3_tags.update(git_info)
+            if git_info:
+                s3_tags.update(git_info)
             if self.description:
                 s3_tags["Description"] = self.description[:255] # S3 tag value limit
             
             s3_tags.update(custom_tags_dict)
 
+            s3_metadata = {
+                "system": sys_info["system"],
+                "architecture": sys_info["architecture"]
+            }
+
             self.state_service.save_state_file(
-                temporary_file_to_upload, zip_file_name, callback=progress_callback, tags=s3_tags
+                temporary_file_to_upload, 
+                zip_file_name, 
+                callback=progress_callback, 
+                tags=s3_tags,
+                metadata=s3_metadata
             )
 
         temporary_file_to_upload.unlink()

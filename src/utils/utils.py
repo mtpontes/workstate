@@ -30,21 +30,7 @@ def get_system_info() -> str:
     return platform.system()
 
 
-def get_git_info() -> dict[str, str]:
-    """Returns the current Git branch and hash if in a Git repository."""
-    try:
-        # Check if it's a git repo
-        subprocess.check_output(["git", "rev-parse", "--is-inside-work-tree"], stderr=subprocess.STDOUT)
-        
-        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"], stderr=subprocess.STDOUT).decode().strip()
-        commit_hash = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.STDOUT).decode().strip()
-        
-        return {
-            "Git-Branch": branch,
-            "Git-Hash": commit_hash
-        }
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return {}
+from src.utils.git_utils import get_git_info
 
 
 def get_current_timestamp() -> str:
@@ -72,6 +58,65 @@ def format_file_size(size_bytes: int) -> str:
         size /= 1024
     return f"{size:.1f} PB"
 
+
+def parse_duration_to_datetime(duration_str: str) -> datetime:
+    """
+    Parses a duration string like '7d', '1mo', '24h', '30m' into a datetime object 
+    representing the point in time (now - duration).
+    
+    Supported units:
+    - s: seconds
+    - m: minutes
+    - h: hours
+    - d: days
+    - w: weeks
+    - mo: months (30 days)
+    """
+    import re
+    from datetime import timedelta, timezone
+    
+    match = re.match(r"^(\d+)([a-z]+)$", duration_str.lower())
+    
+    units_guide = (
+        "\n\n[bold white]Supported Units Guide:[/bold white]\n"
+        "  [cyan]s[/cyan]  - Seconds  (e.g., 30s)\n"
+        "  [cyan]m[/cyan]  - Minutes  (e.g., 15m)\n"
+        "  [cyan]h[/cyan]  - Hours    (e.g., 24h)\n"
+        "  [cyan]d[/cyan]  - Days     (e.g., 7d)\n"
+        "  [cyan]w[/cyan]  - Weeks    (e.g., 2w)\n"
+        "  [cyan]mo[/cyan] - Months   (e.g., 1mo - 30 days)\n"
+    )
+
+    if not match:
+        raise ValueError(
+            f"Invalid duration format: '[bold yellow]{duration_str}[/bold yellow]'.\n"
+            f"Use a number followed by a unit.{units_guide}"
+        )
+    
+    value = int(match.group(1))
+    unit = match.group(2)
+    
+    now = datetime.now(timezone.utc)
+    
+    match unit:
+        case 's':
+            return now - timedelta(seconds=value)
+        case 'm':
+            return now - timedelta(minutes=value)
+        case 'h':
+            return now - timedelta(hours=value)
+        case 'd':
+            return now - timedelta(days=value)
+        case 'w':
+            return now - timedelta(weeks=value)
+        case 'mo':
+            return now - timedelta(days=value * 30)
+        case _:
+            raise ValueError(
+                f"Unsupported time unit: '[bold red]{unit}[/bold red]'.{units_guide}"
+            )
+    
+    return now
 
 def format_error_message(error: Exception = None) -> str:
     if error is None:

@@ -20,3 +20,5 @@ assets/
 README.pt-br.md
 skills/
 !OpenCode Desktop Installer.exe
+.env
+**.md

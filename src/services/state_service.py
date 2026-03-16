@@ -17,7 +17,11 @@ def _get_prefix() -> str:
     return f"{utils.get_project_name()}/"
 
 
-def list_states() -> list[ObjectSummary]:
+def list_states(
+    system: str = None, 
+    branch: str = None, 
+    older_than: str = None
+) -> list[ObjectSummary]:
     """
     Retrieve all `.zip` and `.enc` files from the configured S3 bucket.
     Includes objects in the current project's prefix and legacy root objects.
@@ -28,17 +32,65 @@ def list_states() -> list[ObjectSummary]:
     bucket_client: Bucket = s3_client.create_s3_resource()
     # List all objects and filter locally to avoid complex S3 Delimiter/Prefix logic issues
     all_objects = list(bucket_client.objects.all())
-    prefix = _get_prefix()
+    # Normalize filters: empty strings become None
+    system = system if system else None
+    branch = branch if branch else None
+    older_than = older_than if older_than else None
 
+    prefix = _get_prefix()
     filtered_objects = []
+    
+    # Pre-parse duration for older_than filter
+    cutoff_date = None
+    if older_than:
+        cutoff_date = utils.parse_duration_to_datetime(older_than)
+
     for obj in all_objects:
         # Include if it's in the current project's prefix OR it's at the root (legacy)
         is_in_project = obj.key.startswith(prefix)
         is_at_root = "/" not in obj.key
         
-        if (is_in_project or is_at_root) and (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")):
-            filtered_objects.append(obj)
+        if not ((is_in_project or is_at_root) and (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc"))):
+            continue
 
+        # Apply older_than filter based on S3 LastModified
+        if cutoff_date and obj.last_modified > cutoff_date:
+            continue
+
+        # If system or branch filters are provided, we need to check metadata/tags
+        if system or branch:
+            try:
+                # ObjectSummary needs to get the actual Object to fetch Metadata
+                response = obj.Object().get()
+                metadata = response.get("Metadata", {})
+                
+                if system:
+                    remote_system = metadata.get("system", "").lower()
+                    if system.lower() != remote_system:
+                        continue
+                
+                if branch:
+                    remote_branch = metadata.get("git-branch", "").lower()
+                    # If not in metadata, check tags (as some versions might use tags)
+                    if not remote_branch:
+                        try:
+                            tags_response = bucket_client.meta.client.get_object_tagging(Bucket=bucket_client.name, Key=obj.key)
+                            tags = {t['Key']: t['Value'] for t in tags_response.get('TagSet', [])}
+                            remote_branch = tags.get("Git-Branch", "").lower()
+                        except:
+                            pass
+                    
+                    if branch.lower() != remote_branch:
+                        continue
+            except Exception as e:
+                # print(f"Warning: Could not fetch metadata for {obj.key}: {str(e)}")
+                # If we have filters and metadata fetch fails, we skip it by default (safer)
+                continue
+
+        filtered_objects.append(obj)
+
+    # Sort most recent first
+    filtered_objects.sort(key=lambda x: x.last_modified, reverse=True)
     return filtered_objects
 
 
@@ -69,6 +121,7 @@ def save_state_file(
     object_name: str,
     callback: Callable[[int], None] = None,
     tags: dict[str, str] = None,
+    metadata: dict[str, str] = None,
 ) -> None:
     """
     Upload a local `.zip` file to the S3 bucket inside the project prefix.
@@ -78,13 +131,40 @@ def save_state_file(
         object_name (str): The target filename for the object.
         callback (Callable[[int], None], optional): Progress callback function for Boto3.
         tags (dict[str, str], optional): Dictionary of tags to apply to the S3 object.
+        metadata (dict[str, str], optional): Dictionary of metadata to apply to the S3 object.
     """
+    import os
+    from src.utils import git_utils
     full_key = f"{_get_prefix()}{object_name}"
     
-    extra_args = {}
+    # Ensure mandatory tags for report analysis
+    mandatory_tags = {
+        "Project": utils.get_project_name(),
+        "Environment": os.getenv("WORKSTATE_ENV", "production")
+    }
+    
+    git_info = git_utils.get_git_info()
+    if git_info.get("Git-Branch"):
+        mandatory_tags["Branch"] = git_info["Git-Branch"]
+    if git_info.get("Git-Commit"):
+        mandatory_tags["Git-Commit"] = git_info["Git-Commit"]
+
+    final_tags = mandatory_tags.copy()
     if tags:
+        final_tags.update(tags)
+
+    extra_args = {}
+    if final_tags:
         # Boto3 expects tags in 'key1=value1&key2=value2' format for ExtraArgs
-        extra_args["Tagging"] = "&".join([f"{k}={v}" for k, v in tags.items()])
+        extra_args["Tagging"] = "&".join([f"{k}={v}" for k, v in final_tags.items()])
+
+    if metadata:
+        extra_args["Metadata"] = metadata
+        # Also ensure git info is in metadata for easy access without tag fetching
+        if git_info.get("Git-Branch"):
+            extra_args["Metadata"]["git-branch"] = git_info["Git-Branch"]
+        if git_info.get("Git-Commit"):
+            extra_args["Metadata"]["git-commit"] = git_info["Git-Commit"]
 
     s3_client.create_s3_resource().upload_file(
         str(zip_file), full_key, ExtraArgs=extra_args, Callback=callback

@@ -28,7 +28,7 @@ import typer
 from src.commands.command import CommandI
 from src.services import file_service, state_service
 from src.clients import s3_client
-from src.utils import utils
+from src.utils import utils, system_info
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
@@ -83,6 +83,62 @@ class DownloadCommandImpl(CommandI):
                 selected_zip_file, callback=progress_callback
             )
         self.console.print(f"\n[green]Downloaded:[/green] {zip_file}")
+
+        # Environment and Git Traceability Validation
+        try:
+            from src.utils import git_utils
+            metadata = obj.metadata
+            remote_system = metadata.get("system")
+            remote_arch = metadata.get("architecture")
+            remote_branch = metadata.get("git-branch")
+            remote_commit = metadata.get("git-commit")
+            
+            # Display Traceability Info
+            if remote_branch or remote_commit:
+                trace_msg = "Restoration based on "
+                if remote_branch:
+                    trace_msg += f"branch [bold cyan]{remote_branch}[/bold cyan] "
+                if remote_commit:
+                    short_hash = git_utils.get_commit_short_hash(remote_commit)
+                    trace_msg += f"(commit [bold magenta]{short_hash}[/bold magenta])"
+                
+                from rich.panel import Panel
+                self.console.print(
+                    Panel(
+                        trace_msg,
+                        title="Git Traceability",
+                        border_style="blue",
+                        expand=False
+                    )
+                )
+
+            if remote_system or remote_arch:
+                current_info = system_info.get_system_info()
+                
+                mismatch = []
+                if remote_system and remote_system != current_info["system"]:
+                    mismatch.append(f"System (Remote: [yellow]{remote_system}[/yellow], Local: [yellow]{current_info['system']}[/yellow])")
+                if remote_arch and remote_arch != current_info["architecture"]:
+                    mismatch.append(f"Architecture (Remote: [yellow]{remote_arch}[/yellow], Local: [yellow]{current_info['architecture']}[/yellow])")
+                
+                if mismatch:
+                    from rich.panel import Panel
+                    self.console.print(
+                        Panel(
+                            "[bold yellow]ENVIRONMENT MISMATCH WARNING:[/bold yellow]\n\n"
+                            + "This backup was created in a different environment:\n"
+                            + "\n".join([f"- {m}" for m in mismatch])
+                            + "\n\n[white]Restoring might lead to path or permission issues.[/white]",
+                            title="Compatibility Warning",
+                            border_style="yellow",
+                        )
+                    )
+                    if not typer.confirm("Do you want to proceed with restoration?", default=True):
+                        zip_file.unlink()
+                        self.console.print("[red]Restoration aborted by user.[/red]")
+                        return
+        except Exception as e:
+            self.console.print(f"[dim]Note: Could not verify environment/traceability ({str(e)}). Proceeding...[/dim]")
 
         if zip_file.name.endswith(".enc"):
             self.console.print("[yellow]Encrypted file detected.[/yellow]")

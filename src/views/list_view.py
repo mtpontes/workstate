@@ -6,7 +6,7 @@ from src.utils import utils
 
 def zip_files_table(zip_files: list[ObjectSummary]) -> Table:
     table = Table(title="\nStates on S3 (Organized by Project)", show_header=True, header_style="bold white")
-    table.add_column("Project", style="green")
+    table.add_column("Project", style="green", no_wrap=True)
     table.add_column("State File", style="cyan")
     table.add_column("Size", style="yellow3")
     table.add_column("Last Modified", style="magenta")
@@ -25,7 +25,7 @@ def zip_files_table(zip_files: list[ObjectSummary]) -> Table:
             project,
             filename, 
             utils.format_file_size(obj.size), 
-            str(obj.last_modified.astimezone().strftime("%Y-%m-%d %H:%M:%S"))
+            str(obj.last_modified.strftime("%Y-%m-%d %H:%M:%S"))
         )
 
     return table
