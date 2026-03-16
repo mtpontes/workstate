@@ -8,7 +8,12 @@ from src.commands.save_command import SaveCommandImpl
 
 def register(app: typer, console: Console, file_service: file_service, state_service: state_service):
     @app.command("save", help="Saves the current state of the project to AWS S3")
-    def save_state(state_name: str) -> None:
+    def save_state(
+        state_name: str,
+        dry_run: bool = typer.Option(
+            False, "--dry-run", help="Simulates the save process without uploading"
+        ),
+    ) -> None:
         """Saves the current state of the project to AWS S3
 
         Performs the complete development environment backup process:
@@ -35,7 +40,11 @@ def register(app: typer, console: Console, file_service: file_service, state_ser
         """
         try:
             SaveCommandImpl(
-                state_name=state_name, console=console, file_service=file_service, state_service=state_service
+                state_name=state_name,
+                console=console,
+                file_service=file_service,
+                state_service=state_service,
+                dry_run=dry_run,
             ).execute()
 
         except Exception as e:

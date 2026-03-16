@@ -22,6 +22,8 @@ from rich.progress import (
     TextColumn,
     TransferSpeedColumn,
 )
+from rich.table import Table
+from rich.panel import Panel
 
 from src.utils import utils
 from src.services import file_service, state_service
@@ -35,16 +37,48 @@ class SaveCommandImpl(CommandI):
         console: Console,
         file_service: file_service,
         state_service: state_service,
+        dry_run: bool = False,
     ) -> None:
         self.state_name = state_name
         self.console = console
         self.file_service = file_service
         self.state_service = state_service
+        self.dry_run = dry_run
 
     def execute(self) -> None:
+        files_to_save: list[Path] = self.file_service.select_files()
+        total_size_bytes = self.file_service.calculate_total_files_in_bytes(files_to_save)
+        formatted_size = utils.format_file_size(total_size_bytes)
+
+        if total_size_bytes > 500 * 1024 * 1024:
+            self.console.print(
+                Panel(
+                    f"[bold yellow]WARNING:[/bold yellow] The total size of selected files ({formatted_size}) exceeds the recommended limit of 500MB.\n"
+                    "Upload and download may be slow.",
+                    border_style="yellow",
+                )
+            )
+
+        if self.dry_run:
+            self.console.print(f"\n[bold blue]DRY-RUN MODE[/bold blue]")
+            self.console.print(f"Files that would be saved for state [green]'{self.state_name}'[/green]:\n")
+
+            table = Table(show_header=True, header_style="bold magenta")
+            table.add_column("File Path", style="dim")
+            table.add_column("Size", justify="right")
+
+            for file in files_to_save:
+                table.add_row(str(file.relative_to(Path.cwd())), utils.format_file_size(file.stat().st_size))
+
+            self.console.print(table)
+            self.console.print(f"\n[bold]Total files:[/bold] {len(files_to_save)}")
+            self.console.print(f"[bold]Estimated total size:[/bold] {formatted_size}")
+            self.console.print(f"\n[blue]No files were zipped or uploaded.[/blue]\n")
+            return
+
         with self.console.status("[bold green]Zipping files...", spinner="dots"):
-            files_to_save: list[Path] = self.file_service.select_files()
             temporary_zip_file: Path = self.file_service.zip_files(files_to_save)
+
         zip_file_name: str = utils.define_zip_file_name(self.state_name)
 
         progress = Progress(
