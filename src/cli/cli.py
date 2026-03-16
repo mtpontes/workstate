@@ -54,6 +54,7 @@ from src.cli import (
     save_entry,
     share_entry,
     status_entry,
+    doctor_entry,
 )
 
 
@@ -75,3 +76,4 @@ delete_entry.register(app, console, state_service)
 list_entry.register(app, console, list_view, state_service)
 download_pre_signed_entry.register(app, console, config_view)
 share_entry.register(app, console, state_service, share_info_view)
+doctor_entry.register(app, console)

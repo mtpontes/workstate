@@ -28,3 +28,14 @@ def create_s3_client() -> S3Client:
         aws_secret_access_key=credentials.secret_access_key,
         region_name=credentials.region,
     )
+
+
+def create_sts_client():
+    """Creates STS client for identity verification"""
+    credentials: AWSCredentialsDTO = ConfigService.get_aws_credentials()
+    return boto3.client(
+        "sts",
+        aws_access_key_id=credentials.access_key_id,
+        aws_secret_access_key=credentials.secret_access_key,
+        region_name=credentials.region,
+    )
