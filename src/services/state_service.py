@@ -11,18 +11,19 @@ from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 def list_states() -> list[ObjectSummary]:
     """
-    Retrieve all `.zip` files from the configured S3 bucket.
+    Retrieve all `.zip` and `.enc` files from the configured S3 bucket.
 
     Returns:
-        list[ObjectSummary]: A list of S3 objects representing `.zip` files.
+        list[ObjectSummary]: A list of S3 objects representing state files.
     """
     bucket_client: Bucket = s3_client.create_s3_resource()
-    s3_objects: Iterable[ObjectSummary] = bucket_client.objects.all()
+    # Explicitly convert to list to avoid iterator exhaustion issues
+    all_objects = list(bucket_client.objects.all())
 
-    def only_zip_files(files: Iterable[ObjectSummary]):
-        return [file for file in files if file.key.endswith(DOT_ZIP)]
-
-    return only_zip_files(s3_objects)
+    return [
+        obj for obj in all_objects 
+        if obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")
+    ]
 
 
 def download_state_file(object_name: str, callback: Callable[[int], None] = None) -> Path:

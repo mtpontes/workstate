@@ -6,3 +6,4 @@ rich
 InquirerPy
 requests
 pyperclip
+cryptography

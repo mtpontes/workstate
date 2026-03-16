@@ -9,8 +9,15 @@ Functions:
 """
 
 import typer
+from pathlib import Path
 from rich.console import Console
 from rich.prompt import Confirm
+
+import base64
+import os
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.fernet import Fernet
 
 from src.constants.constants import DOT_ZIP
 
@@ -76,3 +83,60 @@ def destructure_pre_signed_url(url: str) -> tuple[str, str, str]:
     """Return base url and args Signature and Expires"""
     url_split: list[str] = url.split("&")
     return (url_split[0], url_split[1].split("=")[1], url_split[2].split("=")[1])
+
+
+def derive_key(password: str, salt: bytes) -> bytes:
+    """Derives a cryptographic key from a password and salt."""
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=480000,
+    )
+    return base64.urlsafe_b64encode(kdf.derive(password.encode()))
+
+
+def encrypt_file(file_path: Path, password: str) -> Path:
+    """Encrypts a file and returns the path to the encrypted file."""
+    salt = os.urandom(16)
+    key = derive_key(password, salt)
+    fernet = Fernet(key)
+
+    with open(file_path, "rb") as f:
+        data = f.read()
+
+    encrypted_data = fernet.encrypt(data)
+
+    encrypted_file_path = file_path.with_suffix(file_path.suffix + ".enc")
+    with open(encrypted_file_path, "wb") as f:
+        # Store salt at the beginning of the file (16 bytes)
+        f.write(salt)
+        f.write(encrypted_data)
+
+    return encrypted_file_path
+
+
+def decrypt_file(file_path: Path, password: str) -> Path:
+    """Decrypts a file and returns the path to the decrypted file."""
+    with open(file_path, "rb") as f:
+        salt = f.read(16)
+        encrypted_data = f.read()
+
+    key = derive_key(password, salt)
+    fernet = Fernet(key)
+
+    decrypted_data = fernet.decrypt(encrypted_data)
+
+    decrypted_file_path = file_path.with_suffix("").with_suffix(file_path.suffixes[-2])
+    # If it was state.zip.enc -> state.zip
+    
+    # Let's be more robust with naming
+    if file_path.name.endswith(".enc"):
+        decrypted_file_path = file_path.parent / file_path.name[:-4]
+    else:
+        decrypted_file_path = file_path.with_suffix(".decrypted")
+
+    with open(decrypted_file_path, "wb") as f:
+        f.write(decrypted_data)
+
+    return decrypted_file_path

@@ -38,12 +38,16 @@ class SaveCommandImpl(CommandI):
         file_service: file_service,
         state_service: state_service,
         dry_run: bool = False,
+        encrypt: bool = False,
+        password: str = None,
     ) -> None:
         self.state_name = state_name
         self.console = console
         self.file_service = file_service
         self.state_service = state_service
         self.dry_run = dry_run
+        self.encrypt = encrypt
+        self.password = password
 
     def execute(self) -> None:
         files_to_save: list[Path] = self.file_service.select_files()
@@ -77,9 +81,16 @@ class SaveCommandImpl(CommandI):
             return
 
         with self.console.status("[bold green]Zipping files...", spinner="dots"):
-            temporary_zip_file: Path = self.file_service.zip_files(files_to_save)
+            temporary_file_to_upload: Path = self.file_service.zip_files(files_to_save)
 
         zip_file_name: str = utils.define_zip_file_name(self.state_name)
+
+        if self.encrypt and self.password:
+            with self.console.status("[bold green]Encrypting data...", spinner="dots"):
+                original_zip = temporary_file_to_upload
+                temporary_file_to_upload = utils.encrypt_file(original_zip, self.password)
+                original_zip.unlink() # Remove the unencrypted zip
+                zip_file_name += ".enc"
 
         progress = Progress(
             TextColumn("[bold blue]{task.description}"),
@@ -93,17 +104,17 @@ class SaveCommandImpl(CommandI):
 
         with progress:
             upload_task = progress.add_task(
-                f"Uploading {zip_file_name}", total=temporary_zip_file.stat().st_size
+                f"Uploading {zip_file_name}", total=temporary_file_to_upload.stat().st_size
             )
 
             def progress_callback(bytes_amount):
                 progress.update(upload_task, advance=bytes_amount)
 
             self.state_service.save_state_file(
-                temporary_zip_file, zip_file_name, callback=progress_callback
+                temporary_file_to_upload, zip_file_name, callback=progress_callback
             )
 
-        temporary_zip_file.unlink()
+        temporary_file_to_upload.unlink()
 
         self.console.print(
             f"\n[bold green]✔ State '{self.state_name}' saved successfully to S3 as '{zip_file_name}'[/bold green]\n"

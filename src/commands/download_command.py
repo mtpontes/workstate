@@ -23,9 +23,12 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 
+import os
+import typer
 from src.commands.command import CommandI
 from src.services import file_service, state_service
 from src.clients import s3_client
+from src.utils import utils
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
@@ -80,6 +83,22 @@ class DownloadCommandImpl(CommandI):
                 selected_zip_file, callback=progress_callback
             )
         self.console.print(f"\n[green]Downloaded:[/green] {zip_file}")
+
+        if zip_file.name.endswith(".enc"):
+            self.console.print("[yellow]Encrypted file detected.[/yellow]")
+            password = os.getenv("WORKSTATE_ENCRYPTION_PASSWORD")
+            if not password:
+                password = typer.prompt("Encryption password", hide_input=True)
+            
+            with self.console.status("[bold green]Decrypting data...", spinner="dots"):
+                try:
+                    encrypted_zip = zip_file
+                    zip_file = utils.decrypt_file(encrypted_zip, password)
+                    encrypted_zip.unlink() # Remove the encrypted file
+                except Exception as e:
+                    self.console.print("[red]Decryption failed. Check your password.[/red]")
+                    encrypted_zip.unlink()
+                    raise e
 
         if self.only_download:
             self.console.print("[blue]Only downloaded file. Skipped unpacking.[/blue]")
