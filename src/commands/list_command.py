@@ -18,15 +18,29 @@ from mypy_boto3_s3.service_resource import ObjectSummary
 from src.views import list_view
 from src.services import state_service
 from src.commands.command import CommandI
+from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
 class ListCommandImpl(CommandI):
-    def __init__(self, console: Console, views: list_view, state_service: state_service):
+    def __init__(
+        self,
+        console: Console,
+        views: list_view,
+        state_service: state_service,
+        prompter: ZipFileSelectorPrompter = None,
+        interactive: bool = False,
+    ):
         self.console = console
         self.views = views
         self.state_service = state_service
+        self.prompter = prompter
+        self.interactive = interactive
 
-    def execute(self) -> Table:
+    def execute(self) -> None:
+        if self.interactive and self.prompter:
+            self.prompter.prompt()
+            return
+
         with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
             zip_files: list[ObjectSummary] = self.state_service.list_states()
 

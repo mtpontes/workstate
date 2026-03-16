@@ -54,10 +54,11 @@ class ZipFileSelectorPrompter(StringPrompterI):
                 "question": "",
             }
         )
-        return inquirer.select(
+        method = inquirer.fuzzy if hasattr(inquirer, "fuzzy") else inquirer.select
+        return method(
             message="Select a zip file to download:",
             choices=choices,
-            instruction="Use ↑/↓ to navigate and Enter to select",
+            instruction="Use ↑/↓ to navigate, type to filter and Enter to select",
             vi_mode=True,
             style=custom_style,
         ).execute()

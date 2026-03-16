@@ -13,6 +13,9 @@ def register(app: typer, console: Console, state_service: state_service):
         only_download: bool = typer.Option(
             False, "--only-download", help="Only downloads the state, without unpacking it"
         ),
+        interactive: bool = typer.Option(
+            True, "--interactive", "-i", help="Interactive mode with fuzzy search"
+        ),
     ) -> None:
         """Restores a saved project state from AWS S3
 
