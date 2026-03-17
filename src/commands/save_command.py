@@ -43,6 +43,7 @@ class SaveCommandImpl(CommandI):
         force: bool = False,
         description: str = None,
         tags: list[str] = None,
+        protect: bool = False,
     ) -> None:
         self.state_name = state_name
         self.console = console
@@ -54,6 +55,7 @@ class SaveCommandImpl(CommandI):
         self.force = force
         self.description = description
         self.tags = tags
+        self.protect = protect
 
 
     def execute(self) -> None:
@@ -179,7 +181,8 @@ class SaveCommandImpl(CommandI):
                 zip_file_name, 
                 callback=progress_callback, 
                 tags=s3_tags,
-                metadata=s3_metadata
+                metadata=s3_metadata,
+                protected=self.protect
             )
 
         temporary_file_to_upload.unlink()

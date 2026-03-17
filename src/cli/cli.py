@@ -56,6 +56,8 @@ from src.cli import (
     status_entry,
     doctor_entry,
     report_entry,
+    prune_entry,
+    protect_entry,
 )
 
 
@@ -79,3 +81,5 @@ download_pre_signed_entry.register(app, console, config_view)
 share_entry.register(app, console, state_service, share_info_view)
 doctor_entry.register(app, console)
 report_entry.register(app, console)
+prune_entry.register(app, console)
+protect_entry.register(app, console, state_service)

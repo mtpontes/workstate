@@ -20,10 +20,21 @@ def zip_files_table(zip_files: list[ObjectSummary]) -> Table:
         else:
             project = "[Legacy]"
             filename = key
+        
+        # Check for protection (this is a bit slow as it does an S3 call per object)
+        # However, for a standard list of states, it provides the "wow" factor
+        is_protected = False
+        try:
+            from src.services import state_service
+            is_protected = state_service.is_protected(key)
+        except:
+            pass
             
+        protected_label = " [bold red]🔒[/bold red]" if is_protected else ""
+        
         table.add_row(
             project,
-            filename, 
+            f"{filename}{protected_label}", 
             utils.format_file_size(obj.size), 
             str(obj.last_modified.strftime("%Y-%m-%d %H:%M:%S"))
         )

@@ -57,7 +57,7 @@ class DownloadCommandImpl(CommandI):
         Returns:
             str: Name (key) of the selected zip file.
         """
-        selected_zip_file: str = self.prompter.prompt()
+        selected_zip_file: str = self.prompter.prompt(message="Select a zip file to download:")
 
         s3_resource = s3_client.create_s3_resource()
         obj = s3_resource.Object(selected_zip_file)

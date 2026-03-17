@@ -29,9 +29,9 @@ class ZipFileSelectorPrompter(StringPrompterI):
         self.console = console
         self.state_service = state_service
 
-    def prompt(self) -> str:
+    def prompt(self, message: str = "Select a zip file:") -> str:
         with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
-            zip_files: list[ObjectSummary] = self.state_service.list_states()
+            zip_files: list[ObjectSummary] = self.state_service.list_states(global_scan=True)
         if not zip_files:
             self.console.print("[yellow]No ZIP files found in the S3 bucket.[/yellow]")
             raise typer.Exit(0)
@@ -56,7 +56,7 @@ class ZipFileSelectorPrompter(StringPrompterI):
         )
         method = inquirer.fuzzy if hasattr(inquirer, "fuzzy") else inquirer.select
         return method(
-            message="Select a zip file to download:",
+            message=message,
             choices=choices,
             instruction="Use ↑/↓ to navigate, type to filter and Enter to select",
             vi_mode=True,

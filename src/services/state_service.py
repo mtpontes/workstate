@@ -20,11 +20,19 @@ def _get_prefix() -> str:
 def list_states(
     system: str = None, 
     branch: str = None, 
-    older_than: str = None
+    older_than: str = None,
+    global_scan: bool = False
 ) -> list[ObjectSummary]:
     """
     Retrieve all `.zip` and `.enc` files from the configured S3 bucket.
     Includes objects in the current project's prefix and legacy root objects.
+    If global_scan is True, scans all objects in the bucket regardless of prefix.
+
+    Args:
+        system (str, optional): Filter by system metadata.
+        branch (str, optional): Filter by branch metadata/tags.
+        older_than (str, optional): Filter by age (e.g., '30d').
+        global_scan (bool, optional): If True, ignores project prefix and scans everything.
 
     Returns:
         list[ObjectSummary]: A list of S3 objects representing state files.
@@ -46,11 +54,14 @@ def list_states(
         cutoff_date = utils.parse_duration_to_datetime(older_than)
 
     for obj in all_objects:
-        # Include if it's in the current project's prefix OR it's at the root (legacy)
+        # If not global_scan, include only if it's in the current project's prefix OR it's at the root (legacy)
         is_in_project = obj.key.startswith(prefix)
         is_at_root = "/" not in obj.key
         
-        if not ((is_in_project or is_at_root) and (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc"))):
+        if not global_scan and not (is_in_project or is_at_root):
+            continue
+            
+        if not (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")):
             continue
 
         # Apply older_than filter based on S3 LastModified
@@ -115,13 +126,13 @@ def download_state_file(object_name: str, callback: Callable[[int], None] = None
 
     return destination
 
-
 def save_state_file(
     zip_file: Path,
     object_name: str,
     callback: Callable[[int], None] = None,
     tags: dict[str, str] = None,
     metadata: dict[str, str] = None,
+    protected: bool = False,
 ) -> None:
     """
     Upload a local `.zip` file to the S3 bucket inside the project prefix.
@@ -132,6 +143,7 @@ def save_state_file(
         callback (Callable[[int], None], optional): Progress callback function for Boto3.
         tags (dict[str, str], optional): Dictionary of tags to apply to the S3 object.
         metadata (dict[str, str], optional): Dictionary of metadata to apply to the S3 object.
+        protected (bool, optional): If True, marks the state as protected.
     """
     import os
     from src.utils import git_utils
@@ -160,24 +172,84 @@ def save_state_file(
 
     if metadata:
         extra_args["Metadata"] = metadata
-        # Also ensure git info is in metadata for easy access without tag fetching
-        if git_info.get("Git-Branch"):
-            extra_args["Metadata"]["git-branch"] = git_info["Git-Branch"]
-        if git_info.get("Git-Commit"):
-            extra_args["Metadata"]["git-commit"] = git_info["Git-Commit"]
+    else:
+        extra_args["Metadata"] = {}
+
+    if protected:
+        extra_args["Metadata"]["protected"] = "true"
+
+    # Also ensure git info is in metadata for easy access without tag fetching
+    if git_info.get("Git-Branch"):
+        extra_args["Metadata"]["git-branch"] = git_info["Git-Branch"]
+    if git_info.get("Git-Commit"):
+        extra_args["Metadata"]["git-commit"] = git_info["Git-Commit"]
 
     s3_client.create_s3_resource().upload_file(
         str(zip_file), full_key, ExtraArgs=extra_args, Callback=callback
     )
 
 
-def delete_state_file(s3_object_name: str) -> None:
+def delete_state_file(s3_object_name: str, force: bool = False) -> None:
     """
     Delete a specific state file from S3.
     Args:
         s3_object_name (str): Full key of the object to delete.
+        force (bool): If True, bypass protection check.
     """
+    if not force and is_protected(s3_object_name):
+        raise Exception(f"Cannot delete protected state: {s3_object_name}. Use --force or unprotect it first.")
+        
     s3_client.create_s3_resource().Object(s3_object_name).delete()
+
+
+def is_protected(s3_object_name: str) -> bool:
+    """
+    Check if a state file is protected via metadata.
+    Args:
+        s3_object_name (str): Full key of the object.
+    Returns:
+        bool: True if protected, False otherwise.
+    """
+    try:
+        bucket_client: Bucket = s3_client.create_s3_resource()
+        obj = bucket_client.Object(s3_object_name)
+        response = obj.get()
+        metadata = response.get("Metadata", {})
+        return metadata.get("protected", "false").lower() == "true"
+    except Exception:
+        # If we can't fetch metadata (e.g. object doesn't exist), assume not protected
+        return False
+
+
+def set_protection(s3_object_name: str, protect: bool = True) -> None:
+    """
+    Enable or disable protection for an existing state file.
+    Args:
+        s3_object_name (str): Full key of the object.
+        protect (bool): True to protect, False to unprotect.
+    """
+    bucket_client: Bucket = s3_client.create_s3_resource()
+    obj = bucket_client.Object(s3_object_name)
+    
+    # Fetch existing metadata
+    response = obj.get()
+    metadata = response.get("Metadata", {})
+    
+    # Update protection flag
+    metadata["protected"] = "true" if protect else "false"
+    
+    # Copy object to itself with updated metadata
+    aws_credentials = ConfigService.get_aws_credentials()
+    copy_source = {
+        'Bucket': aws_credentials.bucket_name,
+        'Key': s3_object_name
+    }
+    
+    obj.copy_from(
+        CopySource=copy_source,
+        Metadata=metadata,
+        MetadataDirective='REPLACE'
+    )
 
 
 def generate_presigned_url(object_key: str, expiration_seconds: int = 3600) -> str:
