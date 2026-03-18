@@ -64,6 +64,12 @@ def list_states(
         if not (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")):
             continue
 
+        # Ignore profiles in state listings
+        from src.constants.constants import S3_PROFILES_PREFIX
+        if obj.key.startswith(S3_PROFILES_PREFIX):
+            continue
+
+
         # Apply older_than filter based on S3 LastModified
         if cutoff_date and obj.last_modified > cutoff_date:
             continue

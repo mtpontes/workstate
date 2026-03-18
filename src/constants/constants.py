@@ -27,3 +27,6 @@ SENSITIVE_PATTERNS: Final[list[str]] = [
     "credentials.json",
 ]
 
+PROFILES_FILE: Final[str] = "profiles.json"
+S3_PROFILES_PREFIX: Final[str] = "_profiles/"
+

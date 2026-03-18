@@ -58,6 +58,7 @@ from src.cli import (
     report_entry,
     prune_entry,
     protect_entry,
+    profile_entry,
 )
 
 
@@ -83,3 +84,4 @@ doctor_entry.register(app, console)
 report_entry.register(app, console)
 prune_entry.register(app, console)
 protect_entry.register(app, console, state_service)
+profile_entry.register(app, console)
