@@ -23,11 +23,17 @@ Workstate solves these problems by creating compressed snapshots of your develop
 
 ## Key Features
 
+- **S3 Prefix Organization**: Automatically organizes backups into folders based on project names, allowing one bucket to host multiple projects cleanly.
 - **Smart File Selection**: Uses `.workstateignore` files (similar to `.gitignore`) to define what should be included in the environment snapshot
+- **Client-side Encryption**: Secure your backups with password-based AES encryption (`--encrypt`)
 - **Interactive Interface**: Friendly CLI with rich formatting, interactive menus, and **fuzzy search** support
 - **Real-time Progress**: Visual feedback for uploads and downloads with progress bars
 - **Dry-Run Mode**: Simulate backups to verify file selection and total size before uploading
 - **Selective Restore**: Download states without unpacking or restore full environments
+- **Smart Comparisons**: Compare local files with S3 states before downloading (`compare` command)
+- **Deep Inspection**: View ZIP contents and metadata directly on S3 without downloading (`inspect` command)
+- **Automated Rotation**: Smart rolling backups with configurable retention (`sync` command)
+- **State Protection**: Protect important states from accidental deletion (`protect` command)
 - **AWS S3 Integration**: Secure cloud storage for your development states
 - **Sharing**: Share/import states using temporary pre-signed AWS S3 URLs and automatic clipboard copying
 - **Pre-built Templates**: Comes with optimized templates for popular development tools (Python, Node.js, Java, React, Angular, etc.)
@@ -209,12 +215,21 @@ workstate download --download-only
 | `configure` | Configures AWS credentials | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
 | `init` | Initializes a new Workstate project with `.workstateignore` file | - | `--tool, -t`: Tool type (default: `generic`) |
 | `status` | Shows files tracked by Workstate | - | - |
-| `save` | Saves the current project state to AWS S3 | `state_name`: Unique name for the state | `--dry-run`: Simulates without uploading |
-| `download` | Restores a saved state from AWS S3 | - | `--only-download`: Only downloads without extracting, `--interactive, -i`: Force interactive mode |
-| `delete` | Deletes a saved state in AWS S3 | - | `--interactive, -i`: Force interactive mode |
-| `list` | Lists all available states in AWS S3 | - | `--interactive, -i`: Opens interactive selector |
-| `download-pre-signed` | Restores a saved state from AWS S3 using a pre-signed URL | `base_url`, `signature`, `expires`: Pre-signed URL components | `--no-extract`, `--output, -o` |
-| `share` | Generates a pre-signed AWS S3 URL and copies it to the clipboard | - | `--expiration, -e`: Hours until URL expires (default: 24) |
+| `save` | Saves the current project state to AWS S3 | `state_name`: Unique name for the state | `--dry-run`, `--encrypt`, `--protect, -p`, `--description, -m`, `--tag` |
+| `download` | Restores a saved state from AWS S3 | - | `--only-download`, `--interactive, -i` |
+| `delete` | Deletes a saved state in AWS S3 | - | `--interactive, -i`, `--force` |
+| `list` | Lists all available states in AWS S3 | - | `--interactive, -i`, `--system, -s`, `--branch, -b`, `--older-than, -o` |
+| `inspect` | Views contents of a state ZIP on S3 | `state_name` (optional) | - |
+| `compare` | Compares local files with a remote state | `state_name` (optional) | - |
+| `sync` | Performs automated rolling backup | - | `--retention, -r` (default: 5) |
+| `protect` | Marks a state as protected | - | - |
+| `unprotect` | Removes protection from a state | - | - |
+| `profile` | Manages reusable ignore templates | `action` (save/list/delete/push/pull) | `--remote, -r` (for delete) |
+| `doctor` | Checks system health and AWS connectivity | - | - |
+| `prune` | Deletes old states based on retention | - | `--older-than`, `--all, -a`, `--force, -f` |
+| `report` | Generates storage and cost reports | - | `--tags, -t` (default: Project) |
+| `download-pre-signed` | Restores a saved state from AWS S3 using a pre-signed URL | `base_url`, `signature`, `expires` | `--no-extract`, `--output, -o` |
+| `share` | Generates a pre-signed AWS S3 URL and copies it to the clipboard | - | `--expiration, -e`: Hours (default: 24) |
 
 ### Command Details
 
@@ -276,16 +291,27 @@ workstate init  # uses generic template
 ### `save`
 **Functionality:** Compresses selected files and uploads to S3.
 
+**Options:**
+| Option | Abbreviation | Description |
+|--------|--------------|-------------|
+| `--dry-run` | - | Simulates without uploading |
+| `--encrypt` | - | Encrypts the backup with a password (AES) |
+| `--protect` | `-p` | Prevents accidental deletion of this state |
+| `--description` | `-m` | Optional reason/description for the backup |
+| `--tag` | - | Custom S3 tags in `key=value` format |
+
 **Process:**
 1. Parses `.workstateignore`
-2. Creates temporary ZIP
-3. Uploads to S3
-4. Removes temporary file
+2. Scans for sensitive files (e.g., `.env`, `.pem`, `id_rsa`) and alerts the user
+3. Creates temporary ZIP (encrypted if requested)
+4. Uploads to S3 inside a folder named after your project: `s3://your-bucket/project-name/state-name.zip`
+5. Removes temporary file
 
 **Examples:**
 ```bash
 workstate save my-django-project
-workstate save "project with spaces"
+workstate save my-secret-project --encrypt
+workstate save production-hotfix -p -m "Critical fix"
 ```
 
 ### `download`
@@ -370,11 +396,116 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 ### `list`
 **Functionality:** Lists states saved in S3 with detailed information.
 
+**Options:**
+| Option | Abbreviation | Description |
+|--------|--------------|-------------|
+| `--system` | `-s` | Filter by OS (Windows, Linux, Darwin) |
+| `--branch` | `-b` | Filter by Git branch |
+| `--older-than`| `-o` | Filter by duration (e.g., 7d, 1m, 24h) |
+| `--interactive`| `-i` | Opens interactive fuzzy selector |
+
 **Displayed Information:**
-- Filename
+- Filename (marked with 🔒 if encrypted)
 - Size
 - Modification date
+- Project metadata (Git branch, commit)
 - Sort by date (newest first)
+
+### `inspect`
+**Functionality:** Views the internal content of a state file on S3 without downloading it fully.
+
+**Process:**
+1. Downloads ZIP headers from S3
+2. Displays a table with all files, their sizes, and modification dates
+3. If encrypted, prompts for decryption password
+
+**Examples:**
+```bash
+workstate inspect my-project.zip
+workstate inspect  # opens interactive selector
+```
+
+### `compare`
+**Functionality:** Compares the local project state with a remote backup.
+
+**Process:**
+1. Fetches metadata from the remote state
+2. Scans local files (respecting `.workstateignore`)
+3. Shows a diff: NEW files, MODIFIED files, and MISSING files
+
+### `sync`
+**Functionality:** Automated rolling backup designed for CI/CD or CRON jobs.
+
+**Process:**
+1. Compares local state with the latest remote checkpoint
+2. Uploads new `checkpoint-TIMESTAMP.zip` only if changes are detected
+3. Automatically deletes oldest checkpoints based on retention
+
+**Options:**
+| Option | Abbreviation | Description |
+|--------|--------------|-------------|
+| `--retention` | `-r` | Maximum number of checkpoints to keep (default: 5) |
+
+### `protect` / `unprotect`
+**Functionality:** Manages the protection status of state files to prevent accidental deletion. Protected files cannot be deleted by `delete` or `prune` unless `--force` is used.
+
+### `profile`
+**Functionality:** Manages `.workstateignore` configurations as reusable profiles.
+
+**Subcommands:**
+- `save <name>`: Save current `.workstateignore` as a local profile
+- `list`: Show all local and remote profiles
+- `delete <name>`: Remove a profile (use `--remote` for S3)
+- `push <name>`: Upload local profile to S3
+- `pull <name>`: Download S3 profile to local
+
+### `doctor`
+**Functionality:** Runs diagnostic tests for AWS credentials, S3 bucket connectivity, and local configuration validity.
+
+**Diagnostic Checks:**
+1. **Local Configuration**: Verifies if `~/.workstate/config.json` exists and contains valid AWS credentials.
+2. **AWS Connectivity**: Tests authentication with AWS STS (`get-caller-identity`) to ensure your keys are valid.
+3. **S3 Bucket Access**: Checks if the target bucket exists and verifies permissions by performing a temporary Write/Delete operation.
+
+### `prune`
+**Functionality:** Bulk cleanup of old state files.
+
+**Options:**
+| Option | Abbreviation | Description |
+|--------|--------------|-------------|
+| `--older-than` | - | Duration (e.g., 30d, 3m, 24h) |
+| `--all` | `-a` | Prune states from all projects in the bucket |
+| `--force` | `-f` | Skip confirmation |
+
+### `report`
+**Functionality:** Generates detailed reports about storage usage and estimated S3 costs.
+
+**Options:**
+| Option | Abbreviation | Description |
+|--------|--------------|-------------|
+| `--tags` | `-t` | Comma-separated tags to group by (default: Project) |
+
+</details>
+
+<details>
+  <summary><h2>Hooks and Automation</h2></summary>
+
+### Post-Restoration Hooks
+Workstate supports automation via a `.workstate-hooks` file in the project root. If this file exists, its commands will be executed automatically after a successful `download`.
+
+**Example `.workstate-hooks`:**
+```bash
+# Commands to run after restoration
+npm install
+docker-compose up -d
+python manage.py migrate
+```
+
+### Git Integration
+When saving a state, Workstate automatically detects:
+- **Git Branch**: Saved in S3 tags and metadata
+- **Git Commit**: Saved in S3 metadata
+This allows for easy filtering in `list` and better traceability of your development states.
 
 </details>
 
@@ -420,6 +551,7 @@ logs/
 
 ### Data Security
 - All data is stored in your private S3 bucket
+- **Sensitive File Detection**: Workstate automatically scans for files like `id_rsa`, `.pem`, `.env`, and `credentials.json` during the save process and warns you before uploading.
 - Use S3 bucket policies to restrict access
 - Consider enabling encryption at rest in S3
 - Regularly review S3 access logs

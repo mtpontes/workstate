@@ -39,11 +39,15 @@ class DownloadCommandImpl(CommandI):
         console: Console,
         prompter: ZipFileSelectorPrompter,
         state_service: state_service,
+        hook_service: any = None,
+        yes_to_hooks: bool = False,
     ) -> None:
         self.only_download = only_download
         self.console = console
         self.prompter = prompter
         self.state_service = state_service
+        self.hook_service = hook_service
+        self.yes_to_hooks = yes_to_hooks
 
     def execute(self) -> None:
         """
@@ -162,3 +166,9 @@ class DownloadCommandImpl(CommandI):
             file_service.unzip(zip_file)
             zip_file.unlink()
             self.console.print("[green]✔ State restored successfully.[/green]\n")
+            
+            # Post-Restore Hooks
+            if self.hook_service:
+                commands = self.hook_service.find_hooks(Path.cwd())
+                if commands:
+                    self.hook_service.execute_hooks(commands, self.yes_to_hooks)

@@ -42,8 +42,7 @@ from rich.console import Console
 from src.cli import download_pre_signed_entry
 from src.views import share_info_view
 from src.views import config_view, list_view, status_view
-from src.services import file_service
-from src.services import state_service
+from src.services import file_service, state_service, hook_service
 from src.cli import (
     config,
     configure_entry,
@@ -59,6 +58,9 @@ from src.cli import (
     prune_entry,
     protect_entry,
     profile_entry,
+    inspect_entry,
+    compare_entry,
+    sync_entry,
 )
 
 
@@ -75,7 +77,8 @@ configure_entry.register(app, console)
 init_entry.register(app, console, file_service)
 status_entry.register(app, console, status_view, file_service)
 save_entry.register(app, console, file_service, state_service)
-download_entry.register(app, console, state_service)
+hook_svc = hook_service.HookService(console)
+download_entry.register(app, console, state_service, hook_svc)
 delete_entry.register(app, console, state_service)
 list_entry.register(app, console, list_view, state_service)
 download_pre_signed_entry.register(app, console, config_view)
@@ -85,3 +88,6 @@ report_entry.register(app, console)
 prune_entry.register(app, console)
 protect_entry.register(app, console, state_service)
 profile_entry.register(app, console)
+inspect_entry.register(app, console, state_service)
+compare_entry.register(app, console, state_service, file_service)
+sync_entry.register(app, console, state_service, file_service)

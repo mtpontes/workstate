@@ -197,3 +197,51 @@ def calculate_total_files_in_bytes(files: list[Path]) -> int:
         int: Sum of the total size of the files in bytes.
     """
     return sum(path.stat().st_size for path in files if path.is_file())
+
+
+def compare_files(local_files: list[Path], remote_contents: list[dict]) -> list[dict]:
+    """
+    Compares local files with remote state contents.
+    
+    Args:
+        local_files (list[Path]): List of local file paths (absolute).
+        remote_contents (list[dict]): List of remote file metadata (from state_service.get_state_content).
+        
+    Returns:
+        list[dict]: List of comparison results with keys: 'status', 'path', 'info'.
+                    Status: 'ADDED' (only local), 'DELETED' (only remote), 'MODIFIED' (both, different size), 'EQUAL'.
+    """
+    results = []
+    root = Path.cwd().resolve()
+    
+    # Map local files by relative path
+    local_map = {}
+    for f in local_files:
+        try:
+            rel_path = str(f.relative_to(root)).replace("\\", "/")
+            local_map[rel_path] = f.stat().st_size
+        except ValueError:
+            continue
+            
+    # Map remote files
+    remote_map = {item["filename"]: item["file_size"] for item in remote_contents}
+    
+    # Process all paths
+    all_paths = set(local_map.keys()) | set(remote_map.keys())
+    
+    for path in sorted(all_paths):
+        local_size = local_map.get(path)
+        remote_size = remote_map.get(path)
+        
+        if local_size is not None and remote_size is not None:
+            if local_size == remote_size:
+                status = "EQUAL"
+            else:
+                status = "MODIFIED"
+            results.append({"status": status, "path": path, "local_size": local_size, "remote_size": remote_size})
+        elif local_size is not None:
+            results.append({"status": "ADDED", "path": path, "local_size": local_size, "remote_size": None})
+        else:
+            results.append({"status": "DELETED", "path": path, "local_size": None, "remote_size": remote_size})
+            
+    return results

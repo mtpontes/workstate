@@ -111,6 +111,61 @@ def list_states(
     return filtered_objects
 
 
+def get_state_content(object_key: str, password: str = None) -> list[dict]:
+    """
+    Retrieve the list of files inside a state ZIP on S3.
+    
+    Args:
+        object_key (str): S3 key of the state file.
+        password (str, optional): Password if the file is encrypted.
+        
+    Returns:
+        list[dict]: List of file metadata (filename, size, compress_size, date_time).
+    """
+    import zipfile
+    import io
+    from tempfile import NamedTemporaryFile
+    from src.utils import utils
+
+    bucket_client: Bucket = s3_client.create_s3_resource()
+    obj = bucket_client.Object(object_key)
+    
+    # For large files, we download to a temp file instead of reading into memory
+    with NamedTemporaryFile(suffix=DOT_ZIP, delete=False) as tmp_file:
+        tmp_path = Path(tmp_file.name)
+        tmp_file.close()  # Close the handle immediately to avoid conflicts on Windows
+        
+        bucket_client.download_file(object_key, str(tmp_path))
+        
+        try:
+            target_zip = tmp_path
+            if object_key.endswith(".enc"):
+                if not password:
+                    raise Exception("Password required for encrypted state.")
+                target_zip = utils.decrypt_file(tmp_path, password)
+            
+            with zipfile.ZipFile(target_zip, 'r') as zf:
+                info_list = zf.infolist()
+                contents = [
+                    {
+                        "filename": info.filename,
+                        "file_size": info.file_size,
+                        "compress_size": info.compress_size,
+                        "date_time": info.date_time
+                    }
+                    for info in info_list
+                    if not info.is_dir()
+                ]
+            
+            if object_key.endswith(".enc") and target_zip != tmp_path:
+                target_zip.unlink()
+                
+            return contents
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+
 def download_state_file(object_name: str, callback: Callable[[int], None] = None) -> Path:
     """
     Download a specific `.zip` file from the S3 bucket.

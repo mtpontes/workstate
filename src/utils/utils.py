@@ -207,10 +207,7 @@ def decrypt_file(file_path: Path, password: str) -> Path:
 
     decrypted_data = fernet.decrypt(encrypted_data)
 
-    decrypted_file_path = file_path.with_suffix("").with_suffix(file_path.suffixes[-2])
-    # If it was state.zip.enc -> state.zip
-    
-    # Let's be more robust with naming
+    # Robust naming for decrypted file
     if file_path.name.endswith(".enc"):
         decrypted_file_path = file_path.parent / file_path.name[:-4]
     else:
