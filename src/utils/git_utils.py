@@ -1,4 +1,5 @@
 import subprocess
+from pathlib import Path
 from typing import Dict, Optional
 
 def get_git_info() -> Dict[str, str]:
@@ -30,6 +31,19 @@ def get_git_info() -> Dict[str, str]:
         pass
         
     return info
+
+def get_git_root() -> Optional[Path]:
+    """
+    Returns the absolute path to the root of the Git repository.
+    """
+    try:
+        root = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"], 
+            stderr=subprocess.STDOUT
+        ).decode().strip()
+        return Path(root)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
 
 def get_commit_short_hash(commit_hash: str) -> str:
     """Returns the first 7 characters of a commit hash."""

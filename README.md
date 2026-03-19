@@ -36,6 +36,8 @@ Workstate solves these problems by creating compressed snapshots of your develop
 - **State Protection**: Protect important states from accidental deletion (`protect` command)
 - **AWS S3 Integration**: Secure cloud storage for your development states
 - **Sharing**: Share/import states using temporary pre-signed AWS S3 URLs and automatic clipboard copying
+- **Git Hooks Integration**: Optional git hooks to remind you to save your state before pushing or restore it after switching branches
+- **Update Notifications**: Automatic background checks for new versions to keep your tool up to date
 - **Pre-built Templates**: Comes with optimized templates for popular development tools (Python, Node.js, Java, React, Angular, etc.)
 - **Cross-platform**: Works on Windows, macOS, and Linux
 
@@ -230,6 +232,8 @@ workstate download --download-only
 | `report` | Generates storage and cost reports | - | `--tags, -t` (default: Project) |
 | `download-pre-signed` | Restores a saved state from AWS S3 using a pre-signed URL | `base_url`, `signature`, `expires` | `--no-extract`, `--output, -o` |
 | `share` | Generates a pre-signed AWS S3 URL and copies it to the clipboard | - | `--expiration, -e`: Hours (default: 24) |
+| `git-hook install` | Installs Workstate git hooks (post-checkout, pre-push) | - | `--push/--no-push`, `--checkout/--no-checkout` |
+| `git-hook uninstall` | Removes Workstate git hooks from the current repository | - | - |
 
 ### Command Details
 
@@ -405,9 +409,9 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 | `--interactive`| `-i` | Opens interactive fuzzy selector |
 
 **Displayed Information:**
-- Filename (marked with 🔒 if encrypted)
-- Size
-- Modification date
+- Filename (marked with 🔒 if protected or 🔒 encoded if encrypted)
+- Size (formatted for readability)
+- Modification date (formatted as YYYY-MM-DD HH:MM:SS)
 - Project metadata (Git branch, commit)
 - Sort by date (newest first)
 
@@ -449,6 +453,15 @@ workstate inspect  # opens interactive selector
 ### `protect` / `unprotect`
 **Functionality:** Manages the protection status of state files to prevent accidental deletion. Protected files cannot be deleted by `delete` or `prune` unless `--force` is used.
 
+**Process:**
+1. List available states
+2. Interactive selection of the state to protect/unprotect
+3. Updates S3 metadata with `protected=true` (or `false`)
+4. Displays confirmation of the new status
+
+**Visual Feedback:**
+Protected states are marked with a **🔒 (red lock)** icon in the `list` command.
+
 ### `profile`
 **Functionality:** Manages `.workstateignore` configurations as reusable profiles.
 
@@ -468,14 +481,21 @@ workstate inspect  # opens interactive selector
 3. **S3 Bucket Access**: Checks if the target bucket exists and verifies permissions by performing a temporary Write/Delete operation.
 
 ### `prune`
-**Functionality:** Bulk cleanup of old state files.
+**Functionality:** Bulk cleanup of old state files across one or all projects.
+
+**Process:**
+1. Scans for states older than the specified duration (default: 30 days)
+2. Filters out **protected states**
+3. Displays a list of candidates for deletion
+4. Requests confirmation (unless `--force` is used)
+5. Removes objects from S3
 
 **Options:**
 | Option | Abbreviation | Description |
 |--------|--------------|-------------|
 | `--older-than` | - | Duration (e.g., 30d, 3m, 24h) |
 | `--all` | `-a` | Prune states from all projects in the bucket |
-| `--force` | `-f` | Skip confirmation |
+| `--force` | `-f` | Skip confirmation and delete protected states |
 
 ### `report`
 **Functionality:** Generates detailed reports about storage usage and estimated S3 costs.
@@ -502,12 +522,33 @@ python manage.py migrate
 ```
 
 ### Git Integration
-When saving a state, Workstate automatically detects:
-- **Git Branch**: Saved in S3 tags and metadata
-- **Git Commit**: Saved in S3 metadata
-This allows for easy filtering in `list` and better traceability of your development states.
+When saving a state, Workstate automatically detects and preserves:
+- **Git Branch**: Saved in S3 tags (`Branch`) and metadata (`git-branch`)
+- **Git Commit**: Saved in S3 tags (`Git-Commit`) and metadata (`git-commit`)
 
-</details>
+This allow for:
+- **Filtering**: Use `list --branch <name>` to find specific states
+- **Traceability**: Know exactly which code version generated each state
+- **Conflict Prevention**: Verify if a state belongs to your current branch before downloading
+
+### Git Hooks Integration
+Maintain consistency between your code and your environment state using Git hooks:
+
+```bash
+# Install both hooks (post-checkout and pre-push)
+workstate git-hook install
+
+# Selective installation
+workstate git-hook install --no-checkout
+```
+
+- **post-checkout**: Triggers after `git checkout` or `git switch`, reminding you to run `workstate download`.
+- **pre-push**: Triggers before `git push`, reminding you to run `workstate save` or `workstate sync`.
+
+To remove the hooks:
+```bash
+workstate git-hook uninstall
+```
 
 <details>
   <summary><h2>.workstateignore File</h2></summary>

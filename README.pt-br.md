@@ -35,6 +35,8 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 - **Proteção de Estado**: Proteja estados importantes contra deleção acidental (comando `protect`)
 - **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento
 - **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias e cópia automática para o clipboard
+- **Integração com Git Hooks**: Ganchos de Git opcionais para te lembrar de salvar seu estado antes de um push ou restaurar após trocar de branch
+- **Notificações de Atualização**: Verificações automáticas em segundo plano para garantir que você esteja sempre na versão mais recente
 - **Templates Pré-construídos**: Vem com templates otimizados para ferramentas de desenvolvimento populares (Python, Node.js, Java, React, Angular, etc.)
 - **Multiplataforma**: Funciona no Windows, macOS e Linux
 
@@ -230,6 +232,8 @@ workstate download --download-only
 | `report` | Gera relatórios de armazenamento e custos | - | `--tags, -t` (padrão: Project) |
 | `download-pre-signed` | Restaura um estado salvo do AWS S3 a partir de uma URL pré-assinada | `base_url`, `signature`, `expires` | `--no-extract`, `--output, -o` |
 | `share` | Gera uma URL pré-assinada do AWS S3 e a copia para a área de transferência | - | `--expiration, -e`: Horas (padrão: 24) |
+| `git-hook install` | Instala ganchos Git (post-checkout, pre-push) | - | `--push/--no-push`, `--checkout/--no-checkout` |
+| `git-hook uninstall` | Remove os ganchos Git do Workstate do repositório atual | - | - |
 
 ### Detalhamento dos Comandos
 
@@ -406,9 +410,9 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 | `--interactive`| `-i` | Abre o selecionador interativo com busca fuzzy |
 
 **Informações exibidas:**
-- Nome do arquivo (marcado com 🔒 se criptografado)
-- Tamanho
-- Data de modificação
+- Nome do arquivo (marcado com 🔒 se protegido ou 🔒 encoded se criptografado)
+- Tamanho (formatado para leitura amigável)
+- Data de modificação (formatada como YYYY-MM-DD HH:MM:SS)
 - Metadados do projeto (Branch Git, commit)
 - Ordenação por data (mais recente primeiro)
 
@@ -450,6 +454,15 @@ workstate inspect  # abre selecionador interativo
 ### `protect` / `unprotect`
 **Funcionalidade:** Gerencia o status de proteção de arquivos de estado para evitar deleção acidental. Arquivos protegidos não podem ser removidos pelos comandos `delete` ou `prune`, a menos que `--force` seja utilizado.
 
+**Processo:**
+1. Lista os estados disponíveis
+2. Seleção interativa do estado a ser protegido/desprotegido
+3. Atualiza os metadados no S3 com `protected=true` (ou `false`)
+4. Exibe a confirmação do novo status
+
+**Feedback Visual:**
+Estados protegidos são marcados com um ícone de **🔒 (cadeado vermelho)** no comando `list`.
+
 ### `profile`
 **Funcionalidade:** Gerencia configurações do `.workstateignore` como perfis reutilizáveis.
 
@@ -469,14 +482,21 @@ workstate inspect  # abre selecionador interativo
 3. **Acesso ao Bucket S3**: Verifica se o bucket de destino existe e valida as permissões realizando uma operação temporária de Escrita/Deleção.
 
 ### `prune`
-**Funcionalidade:** Limpeza em massa de arquivos de estado antigos.
+**Funcionalidade:** Limpeza em massa de arquivos de estado antigos de um ou todos os projetos.
+
+**Processo:**
+1. Varre em busca de estados mais antigos que a duração especificada (padrão: 30 dias)
+2. Filtra e ignora os **estados protegidos**
+3. Exibe uma lista de candidatos para exclusão
+4. Solicita confirmação (a menos que `--force` seja usado)
+5. Remove os objetos do S3
 
 **Opções:**
 | Opção | Abreviação | Descrição |
 |-------|------------|-----------|
 | `--older-than` | - | Duração (ex: 30d, 3m, 24h) |
 | `--all` | `-a` | Limpa estados de todos os projetos no bucket |
-| `--force` | `-f` | Pula confirmação |
+| `--force` | `-f` | Pula confirmação e exclui estados protegidos |
 
 ### `report`
 **Funcionalidade:** Gera relatórios detalhados sobre o consumo de armazenamento e custos estimados do S3.
@@ -503,12 +523,33 @@ python manage.py migrate
 ```
 
 ### Integração com Git
-Ao salvar um estado, o Workstate detecta automaticamente:
-- **Branch Git**: Salvo nas tags e metadados do S3
-- **Commit Git**: Salvo nos metadados do S3
-Isso permite filtragens fáceis no `list` e melhor rastreabilidade dos seus estados de desenvolvimento.
+Ao salvar um estado, o Workstate detecta e preserva automaticamente:
+- **Branch Git**: Salvo nas tags (`Branch`) e metadados (`git-branch`) do S3
+- **Commit Git**: Salvo nas tags (`Git-Commit`) e metadados (`git-commit`) do S3
 
-</details>
+Isso permite:
+- **Filtragem**: Use `list --branch <name>` para encontrar estados específicos
+- **Rastreabilidade**: Saiba exatamente qual versão do código gerou cada estado
+- **Prevenção de Conflitos**: Verifique se um estado pertence à sua branch atual antes de baixar
+
+### Integração com Git Hooks
+Mantenha a consistência entre seu código e seu ambiente de desenvolvimento usando ganchos de Git:
+
+```bash
+# Instala ambos os ganchos (post-checkout e pre-push)
+workstate git-hook install
+
+# Instalação seletiva
+workstate git-hook install --no-checkout
+```
+
+- **post-checkout**: Dispara após `git checkout` ou `git switch`, lembrando você de rodar `workstate download`.
+- **pre-push**: Dispara antes do `git push`, lembrando você de rodar `workstate save` ou `workstate sync`.
+
+Para remover os ganchos:
+```bash
+workstate git-hook uninstall
+```
 
 <details>
   <summary><h2>Arquivo .workstateignore</h2></summary>

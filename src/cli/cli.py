@@ -36,13 +36,14 @@ Example of use:
 Author: mtpontes
 """
 
+import threading
 import typer
 from rich.console import Console
 
 from src.cli import download_pre_signed_entry
 from src.views import share_info_view
 from src.views import config_view, list_view, status_view
-from src.services import file_service, state_service, hook_service
+from src.services import file_service, state_service, hook_service, update_service, config_service
 from src.cli import (
     config,
     configure_entry,
@@ -61,6 +62,7 @@ from src.cli import (
     inspect_entry,
     compare_entry,
     sync_entry,
+    git_hook_entry,
 )
 
 
@@ -71,6 +73,20 @@ app = typer.Typer(
     add_completion=False,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
+
+@app.callback()
+def global_callback():
+    """
+    Global setup for all commands.
+    Runs update check in the background.
+    """
+    config_svc = config_service.ConfigService()
+    update_svc = update_service.UpdateService(console, config_svc)
+    
+    # Run update check in background
+    thread = threading.Thread(target=update_svc.check_for_updates)
+    thread.daemon = True
+    thread.start()
 
 config.register(app, console, config_view)
 configure_entry.register(app, console)
@@ -91,3 +107,4 @@ profile_entry.register(app, console)
 inspect_entry.register(app, console, state_service)
 compare_entry.register(app, console, state_service, file_service)
 sync_entry.register(app, console, state_service, file_service)
+git_hook_entry.register(app, console, hook_svc)

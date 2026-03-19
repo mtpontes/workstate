@@ -1,5 +1,7 @@
 from typing import Final
 
+VERSION: Final[str] = "1.2.1"
+
 ACCESS_KEY_ID: Final[str] = "access_key_id"
 SECRET_ACCESS_KEY: Final[str] = "secret_access_key"
 BUCKET_NAME: Final[str] = "bucket_name"
