@@ -54,37 +54,14 @@ jobs:
             echo "release-version=" >> $GITHUB_OUTPUT
           fi
 
-  version-injection:
-    needs: check-branch
-    if: needs.check-branch.outputs.is-merge-from-release == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      
-      - name: Update version
-        run: python scripts/update_version.py ${{ needs.check-branch.outputs.release-version }}
-      
-      - name: Commit and Push version update
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore(version): bump version to ${{ needs.check-branch.outputs.release-version }}"
-
   build:
-    needs: [check-branch, version-injection]
+    needs: check-branch
     if: needs.check-branch.outputs.is-merge-from-release == 'true'
     uses: ./.github/workflows/build.yml
     secrets: inherit
 
   publish-release:
-    needs: [check-branch, build, version-injection]
+    needs: [check-branch, build]
     if: needs.check-branch.outputs.is-merge-from-release == 'true'
     uses: ./.github/workflows/publish-release.yml
     with:
