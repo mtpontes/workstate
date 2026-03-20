@@ -657,6 +657,27 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 </details>
 
 
+## Build e Instalação Local
+
+Se você deseja buildar e instalar o Workstate a partir do código-fonte:
+
+1. **Limpar builds anteriores** (opcional):
+   ```bash
+   # Windows (PowerShell)
+   Remove-Item -Recurse -Force dist, build
+   ```
+2. **Gerar o build**:
+   ```bash
+   python -m build
+   ```
+3. **Instalar o pacote gerado**:
+   ```bash
+   pip install dist/workstate-1.2.1-py3-none-any.whl --force-reinstall
+   ```
+
+Após a instalação, verifique com `workstate --version`.
+
+
 ## Apoie o Projeto
 
 Se este projeto foi útil para você ou para sua equipe, considere deixar uma **estrela** no repositório do GitHub! Isso ajuda outras pessoas a descobrirem o Workstate e me motiva a continuar melhorando a ferramenta.

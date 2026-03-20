@@ -655,6 +655,27 @@ Be careful not to include in your `.workstateignore` (meaning, do not capture):
 </details>
 
 
+## Build and Local Installation
+
+If you want to build and install Workstate from source for development:
+
+1. **Clean previous builds** (optional):
+   ```bash
+   # Windows (PowerShell)
+   Remove-Item -Recurse -Force dist, build
+   ```
+2. **Build the package**:
+   ```bash
+   python -m build
+   ```
+3. **Install the wheel**:
+   ```bash
+   pip install dist/workstate-1.2.1-py3-none-any.whl --force-reinstall
+   ```
+
+After installation, verify with `workstate --version`.
+
+
 ## Support the Project
 
 If this project was useful to you or your team, consider leaving a **star** on the GitHub repository! This helps others discover Workstate and motivates me to continue improving the tool.

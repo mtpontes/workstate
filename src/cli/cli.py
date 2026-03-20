@@ -74,8 +74,23 @@ app = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
+def version_callback(value: bool):
+    if value:
+        from src.constants.constants import VERSION
+        console.print(f"workstate v{VERSION}")
+        raise typer.Exit()
+
 @app.callback()
-def global_callback():
+def global_callback(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-v",
+        help="Show current version",
+        callback=version_callback,
+        is_eager=True,
+    ),
+):
     """
     Global setup for all commands.
     Runs update check in the background.
