@@ -26,6 +26,16 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Extract and Update Version
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            VERSION="${{ github.event.release.tag_name }}"
+          else
+            VERSION=$(echo "${{ github.ref_name }}" | sed 's/release\///')
+          fi
+          echo "Injecting version: $VERSION"
+          python scripts/update_version.py $VERSION
+
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
