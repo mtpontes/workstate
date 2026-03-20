@@ -77,6 +77,12 @@ If you are using `workstate.exe`, ignore this topic.
 - **`.workstateignore`**: Defines files/directories to include/exclude
 - **`~/.workstate/config.json`**: Stores AWS credentials
 
+### Install via pip (Recommended)
+
+```bash
+pip install workstate
+```
+
 ### Install from Source (Python only)
 
 ```bash
@@ -549,6 +555,11 @@ To remove the hooks:
 ```bash
 workstate git-hook uninstall
 ```
+
+### Release Automation
+Workstate follows a CI/CD flow using GitHub Actions. Whenever a new Release is published on GitHub:
+- The Python package is automatically built and published to **PyPI** using Trusted Publishing (OIDC).
+- A corresponding GitHub Release is created with pre-built Windows binaries.
 
 <details>
   <summary><h2>.workstateignore File</h2></summary>

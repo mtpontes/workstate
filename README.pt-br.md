@@ -77,6 +77,12 @@ Se você for utilizar o `workstate.exe` ignore esse tópico.
 - **`~/.workstate/config.json`**: Armazena credenciais AWS
 
 
+### Instalar via pip (Recomendado)
+
+```bash
+pip install workstate
+```
+
 ### Instalar do Código-fonte (somente via Python)
 
 ```bash
@@ -550,6 +556,11 @@ Para remover os ganchos:
 ```bash
 workstate git-hook uninstall
 ```
+
+### Automação de Release
+O Workstate segue um fluxo de CI/CD via GitHub Actions. Sempre que um novo Release é publicado no GitHub:
+- O pacote Python é automaticamente construído e publicado no **PyPI** via Trusted Publishing (OIDC).
+- Um Release correspondente no GitHub é criado com os binários pré-compilados para Windows.
 
 <details>
   <summary><h2>Arquivo .workstateignore</h2></summary>
