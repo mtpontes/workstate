@@ -1,4 +1,4 @@
-name: File Watcher Mover
+name: Workstate
 
 on:
   push:
