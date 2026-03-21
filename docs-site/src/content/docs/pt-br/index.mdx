@@ -1,0 +1,36 @@
+---
+title: Bem-vindo ao Workstate
+description: Ferramenta de gerenciamento de estado de ambiente de desenvolvimento portátil.
+template: splash
+hero:
+  tagline: Preserve e restaure o estado completo do seu ambiente de desenvolvimento entre diferentes máquinas.
+  image:
+    file: ../../../assets/houston.webp
+  actions:
+    - text: Começar agora
+      link: /workstate/pt-br/guides/installation/
+      icon: right-arrow
+      variant: primary
+    - text: Documentação
+      link: /workstate/pt-br/reference/overview/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Por que usar o Workstate?
+
+<CardGrid stagger>
+	<Card title="Rápido como um Raio" icon="rocket">
+		Capture variáveis de ambiente, aliases e configs de ferramentas com um único comando.
+	</Card>
+	<Card title="Seguro com S3" icon="setting">
+		Seus dados nunca saem da sua infraestrutura. 100% alimentado pela sua conta AWS.
+	</Card>
+	<Card title="Criptografia no Cliente" icon="lock">
+		Criptografe dados sensíveis com AES-GCM antes mesmo de tocarem a nuvem.
+	</Card>
+	<Card title="Sincronização Fácil" icon="refresh">
+		Sincronize entre seu laptop e sua workstation com zero atrito.
+	</Card>
+</CardGrid>

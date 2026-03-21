@@ -22,11 +22,21 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 
 ## Principais Funcionalidades
 
+- **Organização por Prefixos S3**: Organiza automaticamente os backups em pastas baseadas no nome do projeto, permitindo gerenciar múltiplos projetos no mesmo bucket de forma limpa.
 - **Seleção Inteligente de Arquivos**: Usa arquivos `.workstateignore` (similar ao `.gitignore`) para definir o que deve ser incluído no snapshot do ambiente
-- **Interface Interativa**: CLI amigável com formatação rica e menus interativos
+- **Criptografia Client-side**: Proteja seus backups com criptografia AES baseada em senha (`--encrypt`)
+- **Interface Interativa**: CLI amigável com formatação rica, menus interativos e **busca fuzzy**
+- **Progresso em Tempo Real**: Feedback visual em tempo real durante o upload e download
+- **Modo Dry-Run**: Simule o backup para verificar arquivos e tamanho total antes de subir para o S3
 - **Restauração Seletiva**: Baixe estados sem descompactar ou restaure ambientes completos
+- **Comparações Inteligentes**: Compare arquivos locais com estados no S3 antes de baixar (comando `compare`)
+- **Inspeção Profunda**: Visualize o conteúdo de um ZIP e metadados diretamente no S3 sem baixar (comando `inspect`)
+- **Rotação Automatizada**: Backups rotativos inteligentes com retenção configurável (comando `sync`)
+- **Proteção de Estado**: Proteja estados importantes contra deleção acidental (comando `protect`)
 - **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento
-- **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias do AWS S3
+- **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias e cópia automática para o clipboard
+- **Integração com Git Hooks**: Ganchos de Git opcionais para te lembrar de salvar seu estado antes de um push ou restaurar após trocar de branch
+- **Notificações de Atualização**: Verificações automáticas em segundo plano para garantir que você esteja sempre na versão mais recente
 - **Templates Pré-construídos**: Vem com templates otimizados para ferramentas de desenvolvimento populares (Python, Node.js, Java, React, Angular, etc.)
 - **Multiplataforma**: Funciona no Windows, macOS e Linux
 
@@ -59,12 +69,19 @@ Se você for utilizar o `workstate.exe` ignore esse tópico.
 - **typer**: Framework para CLIs
 - **rich**: Formatação de terminal
 - **boto3**: SDK AWS para Python
+- **pyperclip**: Suporte multiplataforma para área de transferência
 
 ### Arquivos de Configuração
 
 - **`.workstateignore`**: Define arquivos/diretórios a serem incluídos/excluídos
 - **`~/.workstate/config.json`**: Armazena credenciais AWS
 
+
+### Instalar via pip (Recomendado)
+
+```bash
+pip install workstate
+```
 
 ### Instalar do Código-fonte (somente via Python)
 
@@ -171,7 +188,8 @@ Isso mostra todos os arquivos e diretórios que serão incluídos no snapshot do
 ```bash
 workstate save "meu-projeto-v1"
 ```
-Isso compacta todos os arquivos mapeados (os mesmos listados no comando de status) em .zip e carrega para o AWS S3.
+Isso compacta todos os arquivos mapeados em .zip e carrega para o AWS S3. Use `--dry-run` para simular o processo.
+
 
 ### 5. Listar Estados Disponíveis
 
@@ -205,12 +223,23 @@ workstate download --download-only
 | `configure` | Configura credenciais AWS | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
 | `init` | Inicializa um novo projeto Workstate com arquivo `.workstateignore` | - | `--tool, -t`: Tipo de ferramenta (padrão: `generic`) |
 | `status` | Mostra arquivos rastreados pelo Workstate | - | - |
-| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | - |
-| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`: Apenas baixa sem extrair |
-| `delete` | Exclui um estado salvo no AWS S3 | - | - |
-| `list` | Lista todos os estados disponíveis no AWS S3 | - | - |
-| `download-pre-signed` | Restaura um estado salvo do AWS S3 a partir de uma URL pré-assinada | `base_url`, `signature`, `expires`: Componentes da URL pré-assinada | `--no-extract`, `--output, -o` |
-| `share` | Gera uma URL pré-assinada do AWS S3 para permitir o download de um estado sem necessidade de autenticação | - | `--expiration, -e`: Horas até a URL expirar (padrão: 24) |
+| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | `--dry-run`, `--encrypt`, `--protect, -p`, `--description, -m`, `--tag` |
+| `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`, `--interactive, -i` |
+| `delete` | Exclui um estado salvo no AWS S3 | - | `--interactive, -i`, `--force` |
+| `list` | Lista todos os estados disponíveis no AWS S3 | - | `--interactive, -i`, `--system, -s`, `--branch, -b`, `--older-than, -o` |
+| `inspect` | Visualiza conteúdo de um ZIP de estado no S3 | `state_name` (opcional) | - |
+| `compare` | Compara arquivos locais com um estado remoto | `state_name` (opcional) | - |
+| `sync` | Realiza backup rotativo automatizado | - | `--retention, -r` (padrão: 5) |
+| `protect` | Marca um estado como protegido | - | - |
+| `unprotect` | Remove a proteção de um estado | - | - |
+| `profile` | Gerencia templates de ignore reutilizáveis | `action` (save/list/delete/push/pull) | `--remote, -r` (para delete) |
+| `doctor` | Verifica saúde do sistema e conectividade AWS | - | - |
+| `prune` | Remove estados antigos baseado em retenção | - | `--older-than`, `--all, -a`, `--force, -f` |
+| `report` | Gera relatórios de armazenamento e custos | - | `--tags, -t` (padrão: Project) |
+| `download-pre-signed` | Restaura um estado salvo do AWS S3 a partir de uma URL pré-assinada | `base_url`, `signature`, `expires` | `--no-extract`, `--output, -o` |
+| `share` | Gera uma URL pré-assinada do AWS S3 e a copia para a área de transferência | - | `--expiration, -e`: Horas (padrão: 24) |
+| `git-hook install` | Instala ganchos Git (post-checkout, pre-push) | - | `--push/--no-push`, `--checkout/--no-checkout` |
+| `git-hook uninstall` | Remove os ganchos Git do Workstate do repositório atual | - | - |
 
 ### Detalhamento dos Comandos
 
@@ -272,16 +301,27 @@ workstate init  # usa template generic
 ### `save`
 **Funcionalidade:** Comprime arquivos selecionados e faz upload para S3.
 
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--dry-run` | - | Simula o processo sem fazer upload |
+| `--encrypt` | - | Criptografa o backup com uma senha (AES) |
+| `--protect` | `-p` | Protege o estado contra deleção acidental |
+| `--description` | `-m` | Descrição ou motivo opcional do backup |
+| `--tag` | - | Tags S3 customizadas no formato `chave=valor` |
+
 **Processo:**
-1. Analisa `.workstateignore`
-2. Cria ZIP temporário
-3. Upload para S3
-4. Remove arquivo temporário
+1. Analisa o `.workstateignore`
+2. Varre em busca de arquivos sensíveis (ex: `.env`, `.pem`, `id_rsa`) e alerta o usuário
+3. Cria um ZIP temporário (criptografado se solicitado)
+4. Upload para o S3 dentro de uma pasta com o nome do projeto: `s3://seu-bucket/nome-do-projeto/nome-do-estado.zip`
+5. Remove o arquivo temporário
 
 **Exemplos:**
 ```bash
-workstate save my-django-project
-workstate save "projeto com espaços"
+workstate save meu-projeto-django
+workstate save meu-projeto-secreto --encrypt
+workstate save production-hotfix -p -m "Correção crítica"
 ```
 
 ### `download`
@@ -311,7 +351,7 @@ workstate save "projeto com espaços"
 
 
 ### `share`
-**Funcionalidade:** Gera uma URL pré-assinada para compartilhar um estado do projeto sem necessidade de credenciais AWS.
+**Funcionalidade:** Gera uma URL pré-assinada personalizada para compartilhar um estado do projeto e a copia automaticamente para a área de transferência do sistema.
 
 **Processo:**
 1. Lista estados disponíveis
@@ -367,13 +407,160 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 ### `list`
 **Funcionalidade:** Lista estados salvos no S3 com informações detalhadas.
 
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--system` | `-s` | Filtrar por SO (Windows, Linux, Darwin) |
+| `--branch` | `-b` | Filtrar por branch do Git |
+| `--older-than`| `-o` | Filtrar por duração (ex: 7d, 1m, 24h) |
+| `--interactive`| `-i` | Abre o selecionador interativo com busca fuzzy |
+
 **Informações exibidas:**
-- Nome do arquivo
-- Tamanho
-- Data de modificação
+- Nome do arquivo (marcado com 🔒 se protegido ou 🔒 encoded se criptografado)
+- Tamanho (formatado para leitura amigável)
+- Data de modificação (formatada como YYYY-MM-DD HH:MM:SS)
+- Metadados do projeto (Branch Git, commit)
 - Ordenação por data (mais recente primeiro)
 
+### `inspect`
+**Funcionalidade:** Visualiza o conteúdo interno de um arquivo de estado no S3 sem precisar baixá-lo completamente.
+
+**Processo:**
+1. Baixa os cabeçalhos do ZIP do S3
+2. Exibe uma tabela com todos os arquivos, seus tamanhos e datas de modificação
+3. Se criptografado, solicita a senha para descriptografia
+
+**Exemplos:**
+```bash
+workstate inspect meu-projeto.zip
+workstate inspect  # abre selecionador interativo
+```
+
+### `compare`
+**Funcionalidade:** Compara o estado do projeto local com um backup remoto.
+
+**Processo:**
+1. Busca metadados do estado remoto
+2. Varre os arquivos locais (respeitando `.workstateignore`)
+3. Mostra um diff: arquivos NOVOS, MODIFICADOS e AUSENTES localmente
+
+### `sync`
+**Funcionalidade:** Backup rotativo automatizado projetado para CI/CD ou tarefas agendadas (CRON).
+
+**Processo:**
+1. Compara o estado local com o último checkpoint remoto
+2. Sobe um novo `checkpoint-TIMESTAMP.zip` apenas se mudanças forem detectadas
+3. Remove automaticamente os checkpoints mais antigos baseado na retenção
+
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--retention` | `-r` | Número máximo de checkpoints a manter (padrão: 5) |
+
+### `protect` / `unprotect`
+**Funcionalidade:** Gerencia o status de proteção de arquivos de estado para evitar deleção acidental. Arquivos protegidos não podem ser removidos pelos comandos `delete` ou `prune`, a menos que `--force` seja utilizado.
+
+**Processo:**
+1. Lista os estados disponíveis
+2. Seleção interativa do estado a ser protegido/desprotegido
+3. Atualiza os metadados no S3 com `protected=true` (ou `false`)
+4. Exibe a confirmação do novo status
+
+**Feedback Visual:**
+Estados protegidos são marcados com um ícone de **🔒 (cadeado vermelho)** no comando `list`.
+
+### `profile`
+**Funcionalidade:** Gerencia configurações do `.workstateignore` como perfis reutilizáveis.
+
+**Subcomandos:**
+- `save <nome>`: Salva o `.workstateignore` atual como um perfil local
+- `list`: Mostra todos os perfis locais e remotos
+- `delete <nome>`: Remove um perfil (use `--remote` para S3)
+- `push <nome>`: Upload de perfil local para o S3
+- `pull <nome>`: Download de perfil do S3 para local
+
+### `doctor`
+**Funcionalidade:** Executa testes de diagnóstico para credenciais AWS, conectividade com o bucket S3 e validade da configuração local.
+
+**Testes Realizados:**
+1. **Configuração Local**: Verifica se o arquivo `~/.workstate/config.json` existe e contém credenciais AWS válidas.
+2. **Conectividade AWS**: Testa a autenticação com o AWS STS (`get-caller-identity`) para garantir que suas chaves são válidas.
+3. **Acesso ao Bucket S3**: Verifica se o bucket de destino existe e valida as permissões realizando uma operação temporária de Escrita/Deleção.
+
+### `prune`
+**Funcionalidade:** Limpeza em massa de arquivos de estado antigos de um ou todos os projetos.
+
+**Processo:**
+1. Varre em busca de estados mais antigos que a duração especificada (padrão: 30 dias)
+2. Filtra e ignora os **estados protegidos**
+3. Exibe uma lista de candidatos para exclusão
+4. Solicita confirmação (a menos que `--force` seja usado)
+5. Remove os objetos do S3
+
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--older-than` | - | Duração (ex: 30d, 3m, 24h) |
+| `--all` | `-a` | Limpa estados de todos os projetos no bucket |
+| `--force` | `-f` | Pula confirmação e exclui estados protegidos |
+
+### `report`
+**Funcionalidade:** Gera relatórios detalhados sobre o consumo de armazenamento e custos estimados do S3.
+
+**Opções:**
+| Opção | Abreviação | Descrição |
+|-------|------------|-----------|
+| `--tags` | `-t` | Tags separadas por vírgula para agrupar (padrão: Project) |
+
 </details>
+
+<details>
+  <summary><h2>Hooks e Automação</h2></summary>
+
+### Hooks de Pós-Restauração
+O Workstate suporta automação via um arquivo `.workstate-hooks` na raiz do projeto. Se o arquivo existir, seus comandos serão executados automaticamente após um `download` bem-sucedido.
+
+**Exemplo de `.workstate-hooks`:**
+```bash
+# Comandos para rodar após restauração
+npm install
+docker-compose up -d
+python manage.py migrate
+```
+
+### Integração com Git
+Ao salvar um estado, o Workstate detecta e preserva automaticamente:
+- **Branch Git**: Salvo nas tags (`Branch`) e metadados (`git-branch`) do S3
+- **Commit Git**: Salvo nas tags (`Git-Commit`) e metadados (`git-commit`) do S3
+
+Isso permite:
+- **Filtragem**: Use `list --branch <name>` para encontrar estados específicos
+- **Rastreabilidade**: Saiba exatamente qual versão do código gerou cada estado
+- **Prevenção de Conflitos**: Verifique se um estado pertence à sua branch atual antes de baixar
+
+### Integração com Git Hooks
+Mantenha a consistência entre seu código e seu ambiente de desenvolvimento usando ganchos de Git:
+
+```bash
+# Instala ambos os ganchos (post-checkout e pre-push)
+workstate git-hook install
+
+# Instalação seletiva
+workstate git-hook install --no-checkout
+```
+
+- **post-checkout**: Dispara após `git checkout` ou `git switch`, lembrando você de rodar `workstate download`.
+- **pre-push**: Dispara antes do `git push`, lembrando você de rodar `workstate save` ou `workstate sync`.
+
+Para remover os ganchos:
+```bash
+workstate git-hook uninstall
+```
+
+### Automação de Release
+O Workstate segue um fluxo de CI/CD via GitHub Actions. Sempre que um novo Release é publicado no GitHub:
+- O pacote Python é automaticamente construído e publicado no **PyPI** via Trusted Publishing (OIDC).
+- Um Release correspondente no GitHub é criado com os binários pré-compilados para Windows.
 
 <details>
   <summary><h2>Arquivo .workstateignore</h2></summary>
@@ -417,6 +604,7 @@ logs/
 
 ### Segurança de Dados
 - Todos os dados são armazenados no seu bucket S3 privado
+- **Detecção de Arquivos Sensíveis**: O Workstate varre automaticamente o projeto em busca de arquivos como `id_rsa`, `.pem`, `.env`, e `credentials.json` durante o processo de salvamento e alerta você antes do upload.
 - Use políticas de bucket S3 para restringir acesso
 - Considere habilitar criptografia em repouso no S3
 - Revise regularmente os logs de acesso do S3
@@ -450,6 +638,9 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 - Diferenças de terminação de linha são preservadas como estão
 - Links simbólicos podem não funcionar entre diferentes sistemas operacionais
 
+### Atalho de Ajuda
+- Você pode usar `-h` como um atalho para `--help` em qualquer comando.
+
 
 <details>
   <summary><h2>Solução de Problemas</h2></summary>
@@ -476,6 +667,54 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 
 </details>
 
+
+<details>
+  <summary><h2>Desenvolvimento a partir do Código-fonte</h2></summary>
+
+### 1. Build e Instalação Local
+Se você deseja buildar e instalar o Workstate para fins de desenvolvimento:
+
+1. **Configurar Ambiente de Desenvolvimento**:
+   ```bash
+   git clone https://github.com/mtpontes/workstate.git
+   cd workstate
+   pip install -r requirements.txt
+   ```
+
+2. **Gerar Build e Instalar**:
+   Utilize os scripts de conveniência definidos no `pyproject.toml` (requer [Hatch](https://hatch.pypa.io/)):
+   ```bash
+   # Limpar builds anteriores
+   hatch run clean
+   
+   # Buildar e reinstalar localmente com força
+   hatch run build-local
+   ```
+
+### 2. Desenvolvimento da Documentação
+A documentação é construída com [Starlight (Astro)](https://starlight.astro.build/).
+
+1. **Pré-requisitos**:
+   - Node.js v22 (gerenciado via [nvm](https://github.com/coreybutler/nvm-windows))
+
+2. **Rodar Servidor Local**:
+   ```bash
+   # Usando o atalho
+   hatch run docs-serve
+   
+   # Ou manualmente
+   cd docs-site
+   nvm use 22
+   npm install
+   npm run dev
+   ```
+
+3. **Gerar Build da Documentação**:
+   ```bash
+   cd docs-site
+   npm run build
+   ```
+</details>
 
 ## Apoie o Projeto
 

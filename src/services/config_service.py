@@ -46,19 +46,24 @@ class ConfigService:
     def save_aws_credentials(cls, credentials: AWSCredentials) -> None:
         """
         Saves AWS credentials to file config.json
-
-        Args:
-            access_key_id (str): AWS Access Key ID
-            secret_access_key (str): AWS Secret Access Key
-            region (str): AWS Region
-            bucket_name (str): S3 Bucket name
         """
-        config_file_content: dict[str, any] = cls.load_config()
-        config_file_content[AWS] = credentials.__dict__
-        cls.ensure_config_dir_exists()
+        config = cls.load_config()
+        config[AWS] = credentials.__dict__
+        cls.save_config(config)
 
+    @classmethod
+    def get_config(cls) -> Dict[str, Any]:
+        """Alias for load_config for semantic clarity"""
+        return cls.load_config()
+
+    @classmethod
+    def save_config(cls, config: Dict[str, Any]) -> None:
+        """
+        Saves the complete configuration dictionary to file.
+        """
+        cls.ensure_config_dir_exists()
         with open(cls.CONFIG_FILE, WRITE_OPERATOR) as f:
-            json.dump(config_file_content, f, indent=2)
+            json.dump(config, f, indent=2)
 
     @classmethod
     def load_config(cls) -> Dict[str, Any]:

@@ -5,11 +5,19 @@ from src.services import state_service
 from src.views import list_view
 from src.utils.utils import handle_error
 from src.commands.list_command import ListCommandImpl
+from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
 def register(app: typer, console: Console, list_view: list_view, state_service: state_service):
     @app.command("list", help="Lists all project states available in AWS S3")
-    def list_state_zips() -> None:
+    def list_state_zips(
+        system: str = typer.Option(None, "--system", "-s", help="Filter by system (e.g., Windows, Linux)"),
+        branch: str = typer.Option(None, "--branch", "-b", help="Filter by git branch"),
+        older_than: str = typer.Option(None, "--older-than", "-o", help="Filter states older than duration (e.g., 7d, 1m)"),
+        interactive: bool = typer.Option(
+            False, "--interactive", "-i", help="Interactive mode with fuzzy search"
+        ),
+    ) -> None:
         """Lists all project states available in AWS S3
 
         Connects to the configured S3 bucket and retrieves a list of all
@@ -33,6 +41,16 @@ def register(app: typer, console: Console, list_view: list_view, state_service: 
             - List is sorted by modification date (most recent first)
         """
         try:
-            ListCommandImpl(console, list_view, state_service).execute()
+            prompter = ZipFileSelectorPrompter(console, state_service)
+            ListCommandImpl(
+                console, 
+                list_view, 
+                state_service, 
+                prompter=prompter, 
+                interactive=interactive,
+                system_filter=system,
+                branch_filter=branch,
+                older_than_filter=older_than
+            ).execute()
         except Exception as e:
             handle_error(console, e)

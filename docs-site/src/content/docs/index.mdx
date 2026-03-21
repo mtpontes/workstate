@@ -1,0 +1,36 @@
+---
+title: Workstate
+description: Back up and sync your development environment in seconds.
+template: splash
+hero:
+  tagline: Never lose your environment setup again. Sync your local state with AWS S3 instantly.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /workstate/guides/installation/
+      icon: right-arrow
+      variant: primary
+    - text: Documentation
+      link: /workstate/reference/overview/
+      icon: external
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Why Workstate?
+
+<CardGrid stagger>
+	<Card title="Lightning Fast" icon="rocket">
+		Capture your environment variables, aliases, and tool configs in a single command.
+	</Card>
+	<Card title="Secured with S3" icon="setting">
+		Your data never leaves your infrastructure. 100% powered by your AWS account.
+	</Card>
+	<Card title="Client-Side Encryption" icon="lock">
+		Encrypt sensitive data with AES-GCM before it even touches the cloud.
+	</Card>
+	<Card title="Easy Sync" icon="refresh">
+		Sync between your laptop and workstation with zero friction.
+	</Card>
+</CardGrid>

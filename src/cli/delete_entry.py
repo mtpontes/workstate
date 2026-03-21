@@ -9,7 +9,11 @@ from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 def register(app: typer, console: Console, state_service: state_service):
     @app.command("delete", help="Deletes a saved project state from AWS S3")
-    def delete_state() -> None:
+    def delete_state(
+        interactive: bool = typer.Option(
+            True, "--interactive", "-i", help="Interactive mode with fuzzy search"
+        ),
+    ) -> None:
         try:
             prompter = ZipFileSelectorPrompter(console=console, state_service=state_service)
             DeleteCommandImpl(

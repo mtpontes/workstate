@@ -206,3 +206,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+.agents/
+/docs
+IDEAS.md
+IMPLEMENTATION_PLAN.md
+FUTURE-IDEAS.md
+.workstateignore
+.old

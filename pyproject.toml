@@ -1,3 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "workstate"
+version = "1.2.0"
+description = "Portable Development Environment Management Tool"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+authors = [
+    { name = "mtpontes" }
+]
+dependencies = [
+    "typer",
+    "boto3",
+    "pathspec",
+    "boto3-stubs[essential]",
+    "rich",
+    "InquirerPy",
+    "requests",
+    "pyperclip",
+    "cryptography",
+]
+
+[project.scripts]
+workstate = "src.cli.cli:app"
+
+[tool.hatch.envs.default.scripts]
+docs-serve = [
+  "nvm use 22",
+  "npm run dev --prefix docs-site"
+]
+build-local = [
+    "python -m build",
+    "pip install dist/*.whl --force-reinstall"
+]
+clean = [
+    "rm -rf dist build *.egg-info"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
 [tool.black]
 line-length = 120
 target-version = ['py313']

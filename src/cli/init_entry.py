@@ -10,7 +10,10 @@ from src.commands.init_command import InitCommandImpl
 
 def register(app: typer, console: Console, file_service: file_service):
     @app.command("init", help="Initializes a new Workstate project with .workstateignore file template")
-    def init(tool: str = typer.Option(CodeTool.DEFAULT.value, "--tool", "-t", help=VALID_CODE_TOOLS_OPTIONS)) -> None:
+    def init(
+        tool: str = typer.Option("auto", "--tool", "-t", help=VALID_CODE_TOOLS_OPTIONS),
+        profile: str = typer.Option(None, "--profile", "-p", help="Use a specific saved profile instead of default templates")
+    ) -> None:
         """Initializes a new Workstate project with .workstateignore file template
 
         Creates a .workstateignore file in the current directory with a pre-configured template
@@ -34,6 +37,6 @@ def register(app: typer, console: Console, file_service: file_service):
             - The template can be manually edited after creation.
         """
         try:
-            InitCommandImpl(tool=tool, console=console, file_service=file_service).execute()
+            InitCommandImpl(tool=tool, console=console, file_service=file_service, profile=profile).execute()
         except Exception as e:
             handle_error(console, e)

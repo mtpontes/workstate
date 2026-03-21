@@ -17,7 +17,7 @@ class DeleteCommandImpl(CommandI):
         self.state_service = state_service
 
     def execute(self) -> None:
-        selected_zip_file: str = self.prompter.prompt()
+        selected_zip_file: str = self.prompter.prompt(message="Select a zip file to delete:")
 
         with self.console.status("[bold green]Deleting state...", spinner="dots"):
             self.state_service.delete_state_file(selected_zip_file)

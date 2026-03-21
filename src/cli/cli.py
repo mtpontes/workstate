@@ -36,14 +36,14 @@ Example of use:
 Author: mtpontes
 """
 
+import threading
 import typer
 from rich.console import Console
 
 from src.cli import download_pre_signed_entry
 from src.views import share_info_view
 from src.views import config_view, list_view, status_view
-from src.services import file_service
-from src.services import state_service
+from src.services import file_service, state_service, hook_service, update_service, config_service
 from src.cli import (
     config,
     configure_entry,
@@ -54,19 +54,72 @@ from src.cli import (
     save_entry,
     share_entry,
     status_entry,
+    doctor_entry,
+    report_entry,
+    prune_entry,
+    protect_entry,
+    profile_entry,
+    inspect_entry,
+    compare_entry,
+    sync_entry,
+    git_hook_entry,
 )
 
 
 console = Console()
-app = typer.Typer(name="workstate", help="Portable development environment management tool", add_completion=False)
+app = typer.Typer(
+    name="workstate",
+    help="Portable development environment management tool",
+    add_completion=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
+
+def version_callback(value: bool):
+    if value:
+        from src.constants.constants import VERSION
+        console.print(f"workstate v{VERSION}")
+        raise typer.Exit()
+
+@app.callback()
+def global_callback(
+    version: bool = typer.Option(
+        False,
+        "--version",
+        "-v",
+        help="Show current version",
+        callback=version_callback,
+        is_eager=True,
+    ),
+):
+    """
+    Global setup for all commands.
+    Runs update check in the background.
+    """
+    config_svc = config_service.ConfigService()
+    update_svc = update_service.UpdateService(console, config_svc)
+    
+    # Run update check in background
+    thread = threading.Thread(target=update_svc.check_for_updates)
+    thread.daemon = True
+    thread.start()
 
 config.register(app, console, config_view)
 configure_entry.register(app, console)
 init_entry.register(app, console, file_service)
 status_entry.register(app, console, status_view, file_service)
 save_entry.register(app, console, file_service, state_service)
-download_entry.register(app, console, state_service)
+hook_svc = hook_service.HookService(console)
+download_entry.register(app, console, state_service, hook_svc)
 delete_entry.register(app, console, state_service)
 list_entry.register(app, console, list_view, state_service)
 download_pre_signed_entry.register(app, console, config_view)
 share_entry.register(app, console, state_service, share_info_view)
+doctor_entry.register(app, console)
+report_entry.register(app, console)
+prune_entry.register(app, console)
+protect_entry.register(app, console, state_service)
+profile_entry.register(app, console)
+inspect_entry.register(app, console, state_service)
+compare_entry.register(app, console, state_service, file_service)
+sync_entry.register(app, console, state_service, file_service)
+git_hook_entry.register(app, console, hook_svc)

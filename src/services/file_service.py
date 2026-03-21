@@ -16,16 +16,51 @@ Functions:
     - calculate_total_files_in_bytes(files)
 """
 
+import json
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile
 
 import pathspec
 
-from src.constants.constants import DOT_ZIP, IGNORE_FILE, READ_OPERATOR, WRITE_BINARY_OPERATOR, WRITE_OPERATOR
+from src.constants.constants import (
+    DOT_ZIP,
+    IGNORE_FILE,
+    READ_OPERATOR,
+    SENSITIVE_PATTERNS,
+    WRITE_BINARY_OPERATOR,
+    WRITE_OPERATOR,
+)
 from src.templates.code_tool import CodeTool
 from src.templates.workstate_templates import TEMPLATES_WORKSTATE
 from src.utils.logs import log
+
+
+def scan_for_sensitive_files(files: list[Path]) -> list[Path]:
+    """
+    Scans the list of files for patterns known to be sensitive (credentials, private keys, etc.).
+
+    Args:
+        files (list[Path]): List of files to scan.
+
+    Returns:
+        list[Path]: List of sensitive files found.
+    """
+    sensitive_files = []
+    for file in files:
+        # Check if the filename or any part of the path matches the sensitive patterns
+        # We check the relative path to the current directory
+        try:
+            relative_path = str(file.relative_to(Path.cwd()))
+        except ValueError:
+            relative_path = str(file)
+
+        for pattern in SENSITIVE_PATTERNS:
+            if pattern in relative_path:
+                sensitive_files.append(file)
+                break
+    return sensitive_files
+
 
 
 def create_workstateignore(tool: CodeTool) -> None:
@@ -68,7 +103,7 @@ def select_files() -> list[Path]:
     return files
 
 
-def zip_files(files: list[Path]) -> Path:
+def zip_files(files: list[Path], metadata: dict = None) -> Path:
     """
     Creates a `.zip` file containing the specified files.
 
@@ -76,6 +111,7 @@ def zip_files(files: list[Path]) -> Path:
 
     Args:
         files(list[Path]): List of files to include in the `.zip`.
+        metadata(dict, optional): Metadata to be saved in a `.metadata.json` file inside the ZIP.
 
     Returns:
         Path: Full path to the created `.zip` file.
@@ -85,6 +121,10 @@ def zip_files(files: list[Path]) -> Path:
         with ZipFile(tmp_file, WRITE_OPERATOR, compression=ZIP_DEFLATED) as zipf:
             for file in files:
                 zipf.write(file, arcname=file.relative_to(root))
+            
+            if metadata:
+                zipf.writestr(".metadata.json", json.dumps(metadata, indent=2))
+                
         tmp_file_path = Path(tmp_file.name)
         return tmp_file_path
 
@@ -157,3 +197,51 @@ def calculate_total_files_in_bytes(files: list[Path]) -> int:
         int: Sum of the total size of the files in bytes.
     """
     return sum(path.stat().st_size for path in files if path.is_file())
+
+
+def compare_files(local_files: list[Path], remote_contents: list[dict]) -> list[dict]:
+    """
+    Compares local files with remote state contents.
+    
+    Args:
+        local_files (list[Path]): List of local file paths (absolute).
+        remote_contents (list[dict]): List of remote file metadata (from state_service.get_state_content).
+        
+    Returns:
+        list[dict]: List of comparison results with keys: 'status', 'path', 'info'.
+                    Status: 'ADDED' (only local), 'DELETED' (only remote), 'MODIFIED' (both, different size), 'EQUAL'.
+    """
+    results = []
+    root = Path.cwd().resolve()
+    
+    # Map local files by relative path
+    local_map = {}
+    for f in local_files:
+        try:
+            rel_path = str(f.relative_to(root)).replace("\\", "/")
+            local_map[rel_path] = f.stat().st_size
+        except ValueError:
+            continue
+            
+    # Map remote files
+    remote_map = {item["filename"]: item["file_size"] for item in remote_contents}
+    
+    # Process all paths
+    all_paths = set(local_map.keys()) | set(remote_map.keys())
+    
+    for path in sorted(all_paths):
+        local_size = local_map.get(path)
+        remote_size = remote_map.get(path)
+        
+        if local_size is not None and remote_size is not None:
+            if local_size == remote_size:
+                status = "EQUAL"
+            else:
+                status = "MODIFIED"
+            results.append({"status": status, "path": path, "local_size": local_size, "remote_size": remote_size})
+        elif local_size is not None:
+            results.append({"status": "ADDED", "path": path, "local_size": local_size, "remote_size": None})
+        else:
+            results.append({"status": "DELETED", "path": path, "local_size": None, "remote_size": remote_size})
+            
+    return results

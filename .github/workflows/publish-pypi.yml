@@ -1,0 +1,70 @@
+name: Publish to PyPI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Manual Version (optional)'
+        required: false
+        type: string
+
+jobs:
+  pypi-publish:
+    name: Build and publish Python distribution to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/workstate
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Extract and Update Version
+        run: |
+          # 1. Check if version was provided manually
+          VERSION_MANUAL="${{ github.event.inputs.version }}"
+          
+          if [ -n "$VERSION_MANUAL" ]; then
+            VERSION="$VERSION_MANUAL"
+            echo "🎯 Using manual version: $VERSION"
+          else
+            # 2. Extract from commit message if it contains 'release/x.x.x' or 'v.x.x.x'
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            VERSION=$(echo "$COMMIT_MSG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+            
+            if [ -z "$VERSION" ]; then
+              echo "⚠️ No version pattern found in commit message. Skipping auto-version update."
+              # Optional: You might want to fail here if version MUST be found
+              # exit 1
+            else
+              echo "🚀 Extracted version from commit: $VERSION"
+            fi
+          fi
+          
+          if [ -n "$VERSION" ]; then
+            python scripts/update_version.py "$VERSION"
+          fi
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true

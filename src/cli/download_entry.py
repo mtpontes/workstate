@@ -7,11 +7,17 @@ from src.commands.download_command import DownloadCommandImpl
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 
 
-def register(app: typer, console: Console, state_service: state_service):
+def register(app: typer, console: Console, state_service: state_service, hook_service: any):
     @app.command("download", help="Restores a saved project state from AWS S3")
     def download_state(
         only_download: bool = typer.Option(
             False, "--only-download", help="Only downloads the state, without unpacking it"
+        ),
+        interactive: bool = typer.Option(
+            True, "--interactive", "-i", help="Interactive mode with fuzzy search"
+        ),
+        yes_to_hooks: bool = typer.Option(
+            False, "--yes-to-hooks", "-y", help="Execute post-restore hooks without confirmation"
         ),
     ) -> None:
         """Restores a saved project state from AWS S3
@@ -49,6 +55,8 @@ def register(app: typer, console: Console, state_service: state_service):
                 console=console,
                 prompter=prompter,
                 state_service=state_service,
+                hook_service=hook_service,
+                yes_to_hooks=yes_to_hooks,
             ).execute()
         except Exception as e:
             handle_error(console, e)
