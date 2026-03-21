@@ -1,39 +1,32 @@
 ---
 title: sync
-description: Sincroniza o ambiente com a última versão disponível de forma automática.
+description: Automatically synchronize with the latest backup on S3.
 ---
 
-O `sync` é a versão "mãos livres" do `download`. Ele é ideal para fluxos de automação onde a interatividade não é possível ou desejada.
+The `sync` command is the "automation" version of download. It's designed for scripts and hands-free operations.
 
-## Uso
+## Usage
 
 ```bash
 workstate sync [OPTIONS]
 ```
 
-## Como funciona?
+## How it works
 
-O Workstate busca o backup mais recente que:
-1. Corresponda à sua branch Git atual.
-2. Se não houver nenhum na branch, busca o mais recente do projeto globalmente.
+1. It checks the latest backup available on S3 for the current project.
+2. If the local state is different, it updates files automatically.
+3. If the backup is encrypted, it will look for the password in the `WORKSTATE_PASSWORD` environment variable or prompt the user.
 
-Diferente do `download`, o `sync` assume que você quer a versão mais nova e procederá automaticamente.
+## Examples
 
-## Opções
-
-- `--force`: Ignora avisos de sobrescrita e aplica o estado de forma agressiva.
-- `--branch NAME`: Sincroniza com a versão mais recente de uma branch específica, ignorando a branch local.
-
-## Exemplos
-
-### Uso em Hooks de Checkout
-Cole o seguinte script no seu hook de `post-checkout` do Git:
 ```bash
-# Sincroniza o ambiente automaticamente ao trocar de branch
+# Basic sync
 workstate sync
-```
 
-### Uso em CI/CD
-```bash
+# Force sync without asking
 workstate sync --force
 ```
+
+:::tip[Tip]
+Use `sync` in your development shell's startup to ensure your environment is always up-to-date.
+:::

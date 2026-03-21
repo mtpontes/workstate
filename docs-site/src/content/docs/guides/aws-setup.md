@@ -1,25 +1,20 @@
 ---
-title: Configuração AWS
-description: Passo-a-passo para configurar o bucket S3 e as permissões de acesso necessárias.
+title: AWS Setup
+description: Preparing your AWS environment for Workstate.
 ---
 
-O Workstate utiliza o Amazon S3 para armazenar o estado do seu ambiente. Para isso, você precisa de um bucket e um usuário IAM configurados corretamente.
+Workstate uses Amazon S3 to store your environment states safely. Here is how to prepare your account.
 
-## 1. Criar um Bucket S3
+## 1. Create an S3 Bucket
 
-1. Acesse o [Console AWS S3](https://s3.console.aws.io/).
-2. Clique em **Create bucket**.
-3. Escolha um nome descritivo (ex: `workstate-seu-projeto`).
-4. Selecione uma região estável e de baixo custo, como `us-east-1` ou `us-east-2`.
-5. Mantenha as configurações padrão (bloqueio de acesso público é recomendado).
+While Workstate can create a bucket for you during `workstate configure`, you can also use an existing one.
 
-## 2. Configurar Permissões (IAM)
+- **Recommended Region**: Choose a region close to you (e.g., `us-east-1` or `sa-east-1`).
+- **Permissions**: Public access should be **blocked**.
 
-O usuário que executará o comando `workstate` precisa de permissões para ler, listar e escrever no bucket.
+## 2. IAM Permissions
 
-### Política Recomendada (JSON)
-
-Crie uma política IAM no console AWS e anexe-a ao seu usuário:
+The user or role running Workstate needs the following permissions on the target bucket:
 
 ```json
 {
@@ -28,31 +23,24 @@ Crie uma política IAM no console AWS e anexe-a ao seu usuário:
         {
             "Effect": "Allow",
             "Action": [
-                "s3:GetObject",
                 "s3:PutObject",
-                "s3:DeleteObject",
-                "s3:ListBucket"
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:DeleteObject"
             ],
             "Resource": [
-                "arn:aws:s3:::seu-bucket-workstate",
-                "arn:aws:s3:::seu-bucket-workstate/*"
+                "arn:aws:s3:::your-bucket-name",
+                "arn:aws:s3:::your-bucket-name/*"
             ]
         }
     ]
 }
 ```
 
-:::warning[Importante]
-Substitua `seu-bucket-workstate` pelo nome real do bucket que você criou.
-:::
+## 3. Configuration
 
-## 3. Credenciais Locais
+Run the configuration command to link Workstate to your bucket:
 
-O Workstate utilizará as credenciais configuradas na sua máquina (via `aws configure` ou variáveis de ambiente).
-
-1. Execute `workstate configure` no seu projeto.
-2. Informe o **Bucket name** e a **Região** quando solicitado.
-
-:::tip[Dica]
-Se você já configurou a AWS CLI antes, o Workstate detectará automaticamente seu perfil padrão.
-:::
+```bash
+workstate configure
+```

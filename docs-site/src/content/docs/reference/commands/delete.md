@@ -1,39 +1,32 @@
 ---
 title: delete
-description: Remove permanentemente backups do seu bucket S3.
+description: Permanently remove backups from your S3 bucket.
 ---
 
-O comando `delete` permite manter seu bucket limpo, removendo estados que não são mais necessários.
+The `delete` command helps you keep your bucket clean by removing old or unnecessary states.
 
-## Uso
+## Usage
 
 ```bash
-workstate delete [ID_OU_NOME] [OPTIONS]
+workstate delete [ID_OR_NAME] [OPTIONS]
 ```
 
-## Regras de Segurança
+## Safety Rules
 
-1. **Proteção**: O Workstate impedirá a deleção de qualquer backup marcado como protegido (🔒). Você deve remover a proteção primeiro com o comando `protect --remove`.
-2. **Confirmação**: Por padrão, o comando solicitará uma confirmação manual.
+- **Protected Backups**: Workstate will block the deletion of any backup marked as protected (🔒). Remove protection first with `protect --remove`.
+- **Confirmation**: By default, the command asks for manual confirmation.
 
-## Opções
+## Options
 
-- `--force`: Remove o backup sem solicitar confirmação (respeita a proteção).
-- `--older-than DAYS`: Deleta todos os backups não-protegidos anteriores à quantidade de dias especificada.
+- `--force`: Remove without asking (still respects protection).
+- `--older-than DAYS`: Delete all unprotected backups older than N days.
 
-## Exemplos
+## Examples
 
-### Deletar um Backup Específico
 ```bash
+# Delete a specific backup
 workstate delete e4f1
-```
 
-### Limpeza de Backups Antigos
-```bash
-# Deleta backups com mais de 30 dias que não estejam protegidos
+# Cleanup old backups
 workstate delete --older-than 30
 ```
-
-:::caution[Cuidado]
-A operação de deleção é irreversível no S3 (a menos que você tenha versionamento de bucket ativado na AWS).
-:::

@@ -1,38 +1,28 @@
 ---
 title: git-hook
-description: Instala ou remove scripts de integração nativa com o Git.
+description: Install or remove native Git integration hooks.
 ---
 
-O `git-hook` estende o poder do Workstate para dentro do fluxo nativo do seu repositório Git, automatizando lembretes de sincronização.
+The `git-hook` command extends Workstate's power into your Git workflow.
 
-## Uso
+## Usage
 
 ```bash
 workstate git-hook [COMMAND]
 ```
 
-## Sub-comandos
+## Sub-commands
 
 ### `install`
-Instala os hooks de `post-checkout` e `pre-push` no diretório `.git/hooks/` do seu projeto.
-- **post-checkout**: Dispara ao mudar de branch, sugerindo um `workstate sync`.
-- **pre-push**: Dispara ao tentar enviar código, sugerindo um `workstate save`.
+Installs `post-checkout` and `pre-push` hooks in `.git/hooks/`.
+- **post-checkout**: Triggers on branch change, suggesting a `sync`.
+- **pre-push**: Triggers on push, suggesting a `save`.
 
 ### `uninstall`
-Remove permanentemente os hooks instalados pelo Workstate. Não afeta hooks que você criou manualmente.
+Removes the hooks installed by Workstate.
 
-## Funcionamento
-
-Os hooks do Workstate são inteligentes:
-- Eles não bloqueiam sua operação Git se o Workstate falhar ou não estiver configurado.
-- Eles são executados rapidamente para não atrasar seu workflow.
-
-## Exemplos
+## Examples
 
 ```bash
-# Ativa a integração no seu projeto
 workstate git-hook install
-
-# Desativa a integração
-workstate git-hook uninstall
 ```

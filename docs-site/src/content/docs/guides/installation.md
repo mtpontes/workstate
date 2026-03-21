@@ -1,57 +1,39 @@
 ---
-title: Instalação
-description: Como instalar o Workstate no seu ambiente.
+title: Installation
+description: How to install Workstate on your machine.
 ---
 
-O Workstate pode ser instalado via `pip` ou baixando os binários pré-compilados (apenas Windows por enquanto).
+Workstate is a CLI tool built with Python. You can install it using `pip` or by downloading the standalone binary.
 
-## Pré-requisitos
+## Prerequisites
 
-- Python 3.8+
-- Conta AWS com acesso ao S3
-- pip (gerenciador de pacotes do Python)
+- **Python**: Version 3.10 or higher.
+- **AWS CLI**: Configured with valid credentials.
 
-## Instalação via pip (Recomendado)
+## Installation Methods
 
-Esta é a maneira mais fácil de manter o Workstate atualizado:
+### Via Pip (Recommended)
 
 ```bash
 pip install workstate
 ```
 
-## Instalação via Código Fonte
+### From Source
 
-Se você preferir rodar a versão de desenvolvimento:
+If you want the latest development version:
 
 ```bash
 git clone https://github.com/mtpontes/workstate.git
 cd workstate
-pip install -r requirements.txt
+pip install -e .
 ```
 
-## Configuração da AWS
+## Verifying Installation
 
-Para que o Workstate funcione, você precisará de um bucket S3 e um usuário IAM com as permissões corretas.
+After installing, run the following command to verify:
 
-### Permissões Necessárias (IAM)
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject",
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::seu-bucket-workstate",
-                "arn:aws:s3:::seu-bucket-workstate/*"
-            ]
-        }
-    ]
-}
+```bash
+workstate --version
 ```
+
+If you see the version number, you are ready to go!

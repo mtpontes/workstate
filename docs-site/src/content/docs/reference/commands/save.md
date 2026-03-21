@@ -1,44 +1,32 @@
 ---
 title: save
-description: Captura e faz o upload do estado atual para o S3.
+description: Capture and upload the current environment state to S3.
 ---
 
-O `save` é o comando principal para preservar seu trabalho. Ele empacota, opcionalmente criptografa e envia seu ambiente para a nuvem.
+The `save` command creates a "snapshot" of your environment and stores it securely in the cloud.
 
-## Uso
+## Usage
 
 ```bash
-workstate save [OPTIONS] [NAME]
+workstate save [NAME] [OPTIONS]
 ```
 
-## Argumentos
+## Options
 
-- `NAME`: (Opcional) Um nome amigável para o backup (ex: `pos-setup-inicial`). Se não fornecido, o Workstate gera um nome baseado na data e hora.
+- `--encrypt`: Encrypt sensitive files locally before uploading.
+- `--protect`: Mark the backup as "protected" to prevent accidental deletion.
+- `-m, --message TEXT`: Add a descriptive note to the backup.
 
-## Opções
+## Examples
 
-- `--encrypt`: Ativa a criptografia AES no lado do cliente. Você será solicitado a criar ou digitar uma senha.
-- `--dry-run`: Simula a operação. Mostra exatamente quais arquivos seriam incluídos no pacote sem fazer upload.
-- `--protect`: Marca o backup como protegido. Ele não poderá ser deletado automaticamente por políticas de retenção ou pelo comando `delete` (a menos que a proteção seja removida).
-- `--retention DAYS`: (Avançado) Define uma data de expiração personalizada para este backup específico.
-
-## Exemplos
-
-### Salvamento Simples
 ```bash
-workstate save
+# Simple save
+workstate save "base-setup"
+
+# Encrypted and protected save
+workstate save "prod-env" --encrypt --protect
 ```
 
-### Salvamento com Nome e Criptografia
-```bash
-workstate save --encrypt "snapshot-ambiente-estavel"
-```
-
-### Apenas Verificar o que será salvo
-```bash
-workstate save --dry-run
-```
-
-:::caution[Segurança]
-Ao usar `--encrypt`, **não perca sua senha**. O Workstate não armazena sua senha de criptografia e os arquivos não poderão ser recuperados sem ela.
+:::caution[Important]
+If you use `--encrypt`, you will be asked for a password. Don't forget it! We don't store your passwords anywhere.
 :::

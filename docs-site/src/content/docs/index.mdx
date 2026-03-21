@@ -1,47 +1,36 @@
 ---
-title: Bem-vindo ao Workstate
-description: Ferramenta de gerenciamento de estado de ambiente de desenvolvimento portátil.
+title: Workstate
+description: Back up and sync your development environment in seconds.
 template: splash
 hero:
-  tagline: Preserve e restaure o estado completo do seu ambiente de desenvolvimento entre diferentes máquinas.
+  tagline: Never lose your environment setup again. Sync your local state with AWS S3 instantly.
   image:
     file: ../../assets/houston.webp
   actions:
-    - text: Começar agora
+    - text: Get Started
       link: /workstate/guides/installation/
       icon: right-arrow
-    - text: Ver no GitHub
-      link: https://github.com/mtpontes/workstate
+      variant: primary
+    - text: Documentation
+      link: /workstate/reference/overview/
       icon: external
-      variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Por que usar o Workstate?
+## Why Workstate?
 
 <CardGrid stagger>
-	<Card title="Portabilidade Total" icon="rocket">
-		Continue trabalhando em qualquer máquina com exatamente o mesmo setup: bancos de dados locais, configs de IDE e arquivos .env.
+	<Card title="Lightning Fast" icon="rocket">
+		Capture your environment variables, aliases, and tool configs in a single command.
 	</Card>
-	<Card title="Segurança em Primeiro Lugar" icon="lock">
-		Criptografia AES no lado do cliente (`--encrypt`) garante que seus backups no S3 fiquem protegidos.
+	<Card title="Secured with S3" icon="setting">
+		Your data never leaves your infrastructure. 100% powered by your AWS account.
 	</Card>
-	<Card title="Integração com Git" icon="git">
-		Hooks automáticos para lembrar você de salvar o estado antes do push ou restaurar após trocar de branch.
+	<Card title="Client-Side Encryption" icon="lock">
+		Encrypt sensitive data with AES-GCM before it even touches the cloud.
 	</Card>
-	<Card title="Fácil de Usar" icon="setting">
-		Interface CLI rica com suporte a **fuzzy search**, barras de progresso e menus interativos.
+	<Card title="Easy Sync" icon="refresh">
+		Sync between your laptop and workstation with zero friction.
 	</Card>
 </CardGrid>
-
----
-
-## O que o Workstate captura?
-
-O Workstate foi desenhado para capturar tudo o que o controle de versão tradicional (Git) ignora:
-
-- **Variáveis de Ambiente**: `.env`, `.env.local`, arquivos de configuração.
-- **Configurações de IDE**: Projetos do VS Code (`.vscode/`), IntelliJ (`.idea/`), etc.
-- **Bancos de Dados Locais**: Arquivos SQLite, dumps de banco local.
-- **Dados de Desenvolvimento**: Dados de teste, mocks, assets locais.

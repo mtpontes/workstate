@@ -1,47 +1,42 @@
 ---
-title: Guia Rápido
-description: Como usar o Workstate em 5 minutos.
+title: Quickstart
+description: Get up and running with Workstate in 2 minutes.
 ---
 
-Este guia ajudará você a configurar o Workstate e fazer seu primeiro backup em poucos minutos.
+Learn the basic workflow of Workstate: Capture, View, and Restore.
 
-## 1. Configurar Credenciais AWS
+## 1. Initialize
 
-O comando `configure` configura suas chaves AWS, região e o bucket S3:
-
-```bash
-workstate configure
-```
-
-## 2. Inicializar Projeto
-
-Use o comando `init` para criar um arquivo `.workstateignore` padrão para seu projeto:
+Start tracking your current directory:
 
 ```bash
-workstate init --tool python
+workstate init
 ```
 
-## 3. Verificar Arquivos
+## 2. Save your State
 
-Veja quais arquivos serão incluídos no snapshot:
+Capture everything and send it to S3:
 
 ```bash
-workstate status
+workstate save "my-first-backup"
 ```
 
-## 4. Salvar Estado
+## 3. List Backups
 
-Dê um nome ao seu estado atual e envie-o para o S3:
-
-```bash
-workstate save "v1.0-meu-projeto"
-```
-
-## 5. Listar e Restaurar
-
-Para ver os estados disponíveis e baixar um deles:
+See what you have stored in the cloud:
 
 ```bash
 workstate list
-workstate download
 ```
+
+## 4. Restore
+
+Need to go back or setup on a new machine?
+
+```bash
+workstate download [ID]
+```
+
+## Next Steps
+
+- Explore the [Commands Reference](/workstate/reference/overview/) for advanced options like encryption and git hooks.

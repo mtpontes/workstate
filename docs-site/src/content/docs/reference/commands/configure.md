@@ -1,43 +1,32 @@
 ---
 title: configure
-description: Configura as credenciais AWS e o bucket S3 para o Workstate.
+description: Setup AWS credentials and S3 bucket for Workstate.
 ---
 
-O comando `configure` é o primeiro passo para utilizar o Workstate. Ele estabelece a conexão com a sua infraestrutura AWS.
+The `configure` command is the first step to using Workstate. It links your local environment to your AWS account.
 
-## Uso
+## Usage
 
 ```bash
 workstate configure [OPTIONS]
 ```
 
-## Opções
+## Options
 
-- `--global`: Define as configurações globalmente para o usuário atual (armazenado em `~/.workstate_config`).
-- `--local`: Define as configurações apenas para o projeto atual (armazenado no diretório atual).
+- `--profile TEXT`: Use a specific AWS profile from your `~/.aws/credentials`.
+- `--bucket TEXT`: Specify a custom S3 bucket name.
+- `--region TEXT`: Specify the AWS region (e.g., `us-east-1`).
 
-## Funcionamento
+## Examples
 
-Ao executar o comando, o Workstate solicitará interativamente:
-1. **AWS Access Key ID**: Sua chave de acesso IAM.
-2. **AWS Secret Access Key**: Sua chave secreta IAM.
-3. **Region**: A região AWS onde o bucket está localizado (ex: `us-east-1`).
-4. **Bucket Name**: O nome do bucket S3 que será usado para armazenar os backups.
+```bash
+# Interactive setup (Recommended)
+workstate configure
 
-:::tip[Dica]
-Se você já possui a [AWS CLI](https://aws.amazon.com/cli/) instalada e configurada, o Workstate tentará carregar as credenciais do seu perfil padrão se você deixar os campos em branco.
+# Setup with specific profile and bucket
+workstate configure --profile dev-user --bucket my-work-backups
+```
+
+:::tip[Tip]
+If the bucket doesn't exist, Workstate will offer to create it for you automatically with the correct security settings.
 :::
-
-## Exemplos
-
-### Configuração Global
-Útil para definir o bucket padrão que você usará em vários projetos.
-```bash
-workstate configure --global
-```
-
-### Configuração de Projeto Específico
-Útil quando um projeto específico precisa usar um bucket ou credenciais diferentes.
-```bash
-workstate configure --local
-```

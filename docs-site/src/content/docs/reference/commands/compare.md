@@ -1,32 +1,24 @@
 ---
 title: compare
-description: Compara detalhadamente o estado local com um backup no S3.
+description: Compare your local state against a specific backup.
 ---
 
-O `compare` vai além do `status`, permitindo que você compare seu ambiente local com *qualquer* backup específico armazenado no S3.
+The `compare` command provides a line-by-line diff of what has changed between your local files and a remote state.
 
-## Uso
-
-```bash
-workstate compare [ID_OU_NOME]
-```
-
-## O que é verificado?
-
-- **Existência**: Arquivos presentes localmente vs S3.
-- **Conteúdo**: Hashes de arquivos para detectar mudanças bit-a-bit.
-- **Metadados**: Datas de modificação e tamanhos.
-
-## Exemplos
+## Usage
 
 ```bash
-# Compara local com um backup específico
-workstate compare b2d1
-
-# Compara local com o backup mais recente (interativo)
-workstate compare
+workstate compare [ID_OR_NAME]
 ```
 
-:::tip[Dica]
-Use o `compare` antes de um `download --force` para ter certeza absoluta do que será perdido ou ganho na restauração.
-:::
+## Information Displayed
+
+- **Added Lines (+)**: New environment variables or settings you added locally.
+- **Removed Lines (-)**: Settings that exist in the cloud but are missing locally.
+- **Modified Lines**: Value changes for the same key.
+
+## Examples
+
+```bash
+workstate compare e4f1
+```

@@ -1,33 +1,29 @@
 ---
 title: init
-description: Inicializa o rastreamento do Workstate em um novo diretório.
+description: Initialize Workstate tracking in the current directory.
 ---
 
-O comando `init` prepara o diretório atual para ser gerenciado pelo Workstate, criando os arquivos de controle necessários.
+The `init` command prepares your project folder to be tracked by Workstate.
 
-## Uso
+## Usage
 
 ```bash
 workstate init
 ```
 
-## O que acontece?
+## How it works
 
-Ao rodar o `init`, o Workstate cria uma subpasta oculta chamada `.workstate/`. Esta pasta contém:
-- Metadados sobre o estado local.
-- Cache de sincronização.
-- Logs de operações.
+- Creates a hidden `.workstate` folder (if it doesn't exist).
+- Generates a local configuration file with a unique project ID.
+- Scans for common development files to track.
 
-:::important[Importante]
-A pasta `.workstate/` **deve ser adicionada ao seu `.gitignore`**. O Workstate gerencia o que o Git não gerencia, e você não quer "versionar o versionador" dentro do Git.
+## Examples
+
+```bash
+cd my-project
+workstate init
+```
+
+:::note[Note]
+Initializing a project doesn't upload anything to S3 yet. Use `save` for that.
 :::
-
-## Exemplos
-
-```bash
-# Navegue até o seu projeto
-cd meu-projeto-novo
-
-# Inicialize o Workstate
-workstate init
-```

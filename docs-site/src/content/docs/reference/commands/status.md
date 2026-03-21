@@ -1,32 +1,30 @@
 ---
 title: status
-description: Exibe as diferenças entre o estado local e o último backup no S3.
+description: Show differences between local state and the latest backup on S3.
 ---
 
-O comando `status` permite que você veja o que mudou no seu ambiente desde a última vez que você salvou ou baixou um estado.
+The `status` command helps you understand if your local environment is up-to-date or if you have unsaved changes.
 
-## Uso
+## Usage
 
 ```bash
 workstate status
 ```
 
-## Informações Exibidas
+## Information Displayed
 
-O comando realiza uma comparação rápida (usando hashes de arquivos) e reporta:
-- **Arquivos Novos**: Arquivos locais que ainda não estão no S3.
-- **Arquivos Modificados**: Arquivos que existem em ambos, mas têm conteúdos diferentes.
-- **Arquivos Deletados**: Arquivos que estão no S3 mas foram removidos localmente.
+- **Sync Status**: Tells you if you are ahead or behind the cloud.
+- **Changed Files**: Lists environment variables or config files that differ.
+- **Last Sync**: Shows the timestamp of the last successful `save` or `download`.
 
-## Exemplos
+## Examples
 
 ```bash
 $ workstate status
-🔍 Verificando estado do ambiente...
+🔍 Checking state...
 
-[MODIFICADO] .env
-[NOVO]       .vscode/settings.json
-[DELETADO]   temp_log.db
+[MODIFIED] .env
+[UNCHANGED] package.json
 
-O ambiente está divergente do S3. Use 'workstate save' para subir as mudanças.
+You have local changes not yet saved to S3.
 ```

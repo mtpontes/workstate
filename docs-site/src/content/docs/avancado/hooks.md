@@ -1,54 +1,36 @@
 ---
-title: Hooks e Automação
-description: Automatize seu workflow com scripts pós-restauração e integração nativa com o Git.
+title: Hooks and Automation
+description: Integrate Workstate with your Git workflow and automation scripts.
 ---
 
-O Workstate permite automatizar tarefas repetitivas após a restauração do ambiente e integrar-se profundamente ao seu fluxo Git.
+Automation is at the heart of Workstate. You can use hooks to ensure your environment is always in sync.
 
-## scripts Pós-Restauração (`.workstate-hooks`)
+## Native Git Hooks
 
-Você pode criar um arquivo chamado `.workstate-hooks` na raiz do seu projeto para executar comandos automaticamente após cada `download` ou `sync` bem-sucedido.
+Workstate can automatically install hooks in your repository to remind you to sync or save.
 
-### Exemplo de `.workstate-hooks`:
+- **Post-Checkout**: Reminds you to run `workstate sync` when you switch branches.
+- **Pre-Push**: Suggests a `workstate save` before you push your code.
 
-```bash
-# Reinstala dependências se o ambiente mudou
-pip install -r requirements.txt
-
-# Limpa caches temporários
-python manage.py clean_cache
-
-# Notifica o time
-echo "Ambiente Workstate restaurado com sucesso!"
-```
-
-:::warning[Permissões]
-Em sistemas Linux/macOS, certifique-se de que o script tem permissão de execução (`chmod +x .workstate-hooks`). No Windows, ele é executado via PowerShell/CMD.
-:::
-
-## Integração com Git
-
-O Workstate detecta automaticamente se o diretório atual é um repositório Git e captura o estado da branch e o hash do commit no momento do `save`.
-
-### Vantagens:
-- Ao listar backups (`list`), você verá exatamente de qual branch cada estado veio.
-- O comando `sync` prioriza backups da sua branch atual.
-
-## Git Hooks Nativos
-
-O Workstate oferece uma maneira fácil de instalar lembretes de sincronização via Git Hooks nativos.
-
-### Instalando Lembretes
-Execute o comando abaixo para instalar hooks de `post-checkout` e `pre-push`:
-
+To install them, run:
 ```bash
 workstate git-hook install
 ```
 
-- **Post-checkout:** Lembra você de rodar `workstate sync` ao mudar de branch.
-- **Pre-push:** Lembra você de rodar `workstate save` antes de enviar seu código para o repositório remoto.
+## Post-Download Scripts
 
-Para remover os hooks:
-```bash
-workstate git-hook uninstall
+You can define custom shell scripts to run immediately after a `download` or `sync`. This is perfect for:
+- Re-installing dependencies (`npm install`).
+- Restarting local services.
+- Sourcing environment variables.
+
+Create a script named `.workstate/post-sync.sh` in your project root, and Workstate will execute it automatically.
+
+## CI/CD Integration
+
+Since Workstate is a standard CLI tool, you can easily use it in GitHub Actions, GitLab CI, or Jenkins.
+
+```yaml
+- name: Restore Development Environment
+  run: workstate sync
 ```

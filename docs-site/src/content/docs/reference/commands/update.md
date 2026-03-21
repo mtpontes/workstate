@@ -1,35 +1,23 @@
 ---
 title: update
-description: Verifica se há novas versões do Workstate e realiza a atualização.
+description: Check for and install new versions of Workstate.
 ---
 
-O comando `update` garante que você esteja sempre utilizando a versão mais recente do Workstate, com todas as correções de bugs e novas funcionalidades.
+The `update` command ensures you are always running the latest version with all bugfixes.
 
-## Uso
+## Usage
 
 ```bash
 workstate update [OPTIONS]
 ```
 
-## Como funciona?
+## Options
 
-O Workstate se conecta ao repositório oficial (PyPI ou GitHub) para comparar a sua versão instalada com a última versão estável disponível.
+- `--check-only`: Only notify if a new version exists, without installing.
+- `--force`: Force re-installation of the current version.
 
-## Opções
-
-- `--check-only`: Apenas verifica se há atualizações, sem baixar nada.
-- `--force`: Força a reinstalação da versão atual (útil para reparos).
-
-## Exemplos
+## Examples
 
 ```bash
-# Verifica e instala atualizações
 workstate update
-
-# Apenas avisa se há algo novo
-workstate update --check-only
 ```
-
-:::note[Nota]
-Se você instalou o Workstate via `pip`, o comando `update` executará internamente o `pip install --upgrade workstate`.
-:::

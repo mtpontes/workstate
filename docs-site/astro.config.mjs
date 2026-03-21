@@ -6,42 +6,50 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
 	site: 'https://mtpontes.github.io',
 	base: '/workstate',
+	devToolbar: {
+		enabled: false,
+	},
 	integrations: [
 		starlight({
 			title: 'Workstate',
 			social: [
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/mtpontes/workstate' },
 			],
+			defaultLocale: 'root',
+			locales: {
+				root: { label: 'English', lang: 'en' },
+				'pt-br': { label: 'Português', lang: 'pt-BR' },
+			},
 			sidebar: [
 				{
-					label: 'Fundamentos',
+					label: 'Guides',
 					items: [
-						{ label: 'O Que é Capturado', slug: 'fundamentos/o-que-e-capturado' },
+						{ label: 'Installation', slug: 'guides/installation' },
+						{ label: 'Quickstart', slug: 'guides/quickstart' },
+						{ label: 'AWS Setup', slug: 'guides/aws-setup' },
 					],
 				},
 				{
-					label: 'Guias',
+					label: 'Foundations',
 					items: [
-						{ label: 'Instalação', slug: 'guides/installation' },
-						{ label: 'Configuração AWS', slug: 'guides/aws-setup' },
-						{ label: 'Guia Rápido', slug: 'guides/quickstart' },
+						{ label: 'What is Captured', slug: 'foundations/what-is-captured' },
 					],
 				},
 				{
-					label: 'Referência',
+					label: 'Reference',
 					items: [
-						{ label: 'Visão Geral', slug: 'reference/overview' },
+						{ label: 'Commands Overview', slug: 'reference/overview' },
 						{
-							label: 'Comandos',
+							label: 'Commands',
 							autogenerate: { directory: 'reference/commands' },
 						},
 					],
 				},
 				{
-					label: 'Avançado',
+					label: 'Advanced',
 					items: [
-						{ label: 'Hooks e Automação', slug: 'avancado/hooks' },
-						{ label: 'Desenvolvimento', slug: 'avancado/desenvolvimento' },
+						{ label: 'Hooks and Automation', slug: 'avancado/hooks' },
+						{ label: 'Development', slug: 'avancado/desenvolvimento' },
 					],
 				},
 			],

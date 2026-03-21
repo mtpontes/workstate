@@ -1,48 +1,31 @@
 ---
 title: download
-description: Restaura um estado específico do S3 para o diretório local.
+description: Restore a specific state from S3 to your local machine.
 ---
 
-O comando `download` é o principal meio de restaurar seu ambiente em uma nova máquina ou branch.
+The `download` command is how you recover your environment or set it up on a new device.
 
-## Uso
+## Usage
 
 ```bash
-workstate download [OPTIONS] [ID_OU_NOME]
+workstate download [ID_OR_NAME] [OPTIONS]
 ```
 
-## Funcionamento
+## Options
 
-Se você não fornecer um `ID_OU_NOME`, o Workstate entrará no **Modo Interativo**, exibindo uma lista dos backups mais recentes da sua branch atual para você escolher.
+- `--force`: Overwrite local files without asking for confirmation.
+- `--interactive`: Prompt for every file before overwriting.
 
-### Regra de Sobrescrita
-O Workstate protege seu trabalho local. Se você tentar baixar um estado que contenha arquivos diferentes dos locais, ele perguntará se você deseja:
-1. Sobrescrever tudo.
-2. Manter arquivos locais mais novos.
-3. Abortar a operação.
+## Examples
 
-## Opções
-
-- `--force`: Sobrescreve arquivos locais sem perguntar. **Use com cautela.**
-- `--id ID`: Especifica diretamente o ID do backup.
-
-## Exemplos
-
-### Seleção Interativa
 ```bash
-workstate download
-```
-
-### Download por ID
-```bash
+# Restore by ID
 workstate download e4f1
+
+# Restore the latest backup interactively
+workstate download --interactive
 ```
 
-### Download por Nome
-```bash
-workstate download "ambiente-estavel"
-```
-
-:::warning[Criptografia]
-Se o backup foi salvo com `--encrypt`, o Workstate pedirá a senha durante o download.
+:::note[Note]
+If the backup was encrypted, Workstate will prompt you for the decryption password during download.
 :::

@@ -1,37 +1,27 @@
 ---
 title: protect
-description: Ativa ou remove a proteção contra deleção de um backup no S3.
+description: Enable or remove deletion protection for a backup on S3.
 ---
 
-O `protect` garante que backups importantes não sejam removidos acidentalmente por comandos de limpeza ou por você mesmo sem intenção.
+The `protect` command ensures important backups are not accidentally removed by `delete`.
 
-## Uso
+## Usage
 
 ```bash
-workstate protect [ID_OU_NOME] [OPTIONS]
+workstate protect [ID_OR_NAME] [OPTIONS]
 ```
 
-## Como funciona?
+## Options
 
-Um backup protegido ganha um atributo especial no S3. O comando `delete` falhará se tentar remover um backup protegido.
+- `--remove`: Remove protection from a backup.
+- `--all`: Protect all backups in the current project.
 
-## Opções
+## Examples
 
-- `--remove`: Remove a proteção de um backup já protegido.
-- `--all`: (Use com cautela) Protege todos os backups do projeto atual.
-
-## Exemplos
-
-### Proteger um Backup
 ```bash
+# Add protection
 workstate protect e4f1
-```
 
-### Remover Proteção
-```bash
+# Remove protection
 workstate protect e4f1 --remove
 ```
-
-:::note[Nota]
-Backups marcados com `--protect` durante o comando `save` já nascem protegidos e não precisam deste comando adicional.
-:::

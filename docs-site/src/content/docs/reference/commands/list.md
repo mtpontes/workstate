@@ -1,35 +1,30 @@
 ---
 title: list
-description: Lista todos os backups disponíveis no bucket S3.
+description: List available backups for the current project on S3.
 ---
 
-O comando `list` fornece uma visão clara do histórico de estados salvos para o seu projeto.
+The `list` command displays all states you have previously saved to the cloud.
 
-## Uso
+## Usage
 
 ```bash
 workstate list [OPTIONS]
 ```
 
-## Informações Exibidas na Tabela
+## Information Displayed
 
-- **ID**: Identificador curto (ex: `e4f1b2`). Útil para o comando `download`.
-- **Name**: O nome amigável definido no `save`.
-- **Created At**: Data e hora da criação.
-- **Git Branch**: A branch onde o backup foi gerado.
-- **Git Hash**: O commit específico daquele estado.
-- **Protected**: Ícone de cadeado (🔒) se o backup estiver protegido contra deleção.
+- **ID**: Short hash of the backup (e.g., `e4f1`).
+- **Name**: The name you gave during `save`.
+- **Date**: When the state was captured.
+- **Status**: Icons indicating if it's encrypted (🔒) or protected (🔰).
 
-## Opções
+## Options
 
-- `--json`: Retorna a lista em formato JSON (ideal para automações).
-- `--all-branches`: Mostra backups de todas as branches, não apenas da branch atual.
+- `--limit N`: Show only the last N backups.
+- `--all-projects`: List backups from all projects in the bucket.
 
-## Exemplos
+## Examples
 
 ```bash
-$ workstate list
-ID      NAME                    BRANCH  CREATED AT            PROTECTED
-e4f1    setup-win              main     2024-03-10 10:00:00   🔒
-b2d1    pos-sync-api           dev      2024-03-12 15:30:00   
+workstate list --limit 5
 ```
