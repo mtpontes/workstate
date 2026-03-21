@@ -31,6 +31,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install build
 
+      - name: Extract and Update Version
+        run: |
+          VERSION_RAW="${{ github.ref_name }}"
+          # Extrai apenas o padrão x.x.x (removendo 'v' ou prefixos de branch)
+          VERSION=$(echo "$VERSION_RAW" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+          if [ -z "$VERSION" ]; then
+            echo "❌ Could not extract version from $VERSION_RAW"
+            exit 1
+          fi
+          echo "🚀 Using version: $VERSION"
+          python scripts/update_version.py "$VERSION"
+
       - name: Build sdist and wheel
         run: python -m build
 
