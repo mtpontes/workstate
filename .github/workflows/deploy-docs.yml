@@ -2,7 +2,7 @@ name: Deploy Starlight Documentation
 
 on:
   push:
-    branches: ["main", "release/2.0.0"]
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:

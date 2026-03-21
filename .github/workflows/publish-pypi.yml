@@ -1,11 +1,15 @@
 name: Publish to PyPI
 
 on:
-  release:
-    types: [published]
   push:
     branches:
-      - 'release/**'
+      - main
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Manual Version (optional)'
+        required: false
+        type: string
 
 jobs:
   pypi-publish:
@@ -33,15 +37,29 @@ jobs:
 
       - name: Extract and Update Version
         run: |
-          VERSION_RAW="${{ github.ref_name }}"
-          # Extrai apenas o padrão x.x.x (removendo 'v' ou prefixos de branch)
-          VERSION=$(echo "$VERSION_RAW" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
-          if [ -z "$VERSION" ]; then
-            echo "❌ Could not extract version from $VERSION_RAW"
-            exit 1
+          # 1. Check if version was provided manually
+          VERSION_MANUAL="${{ github.event.inputs.version }}"
+          
+          if [ -n "$VERSION_MANUAL" ]; then
+            VERSION="$VERSION_MANUAL"
+            echo "🎯 Using manual version: $VERSION"
+          else
+            # 2. Extract from commit message if it contains 'release/x.x.x' or 'v.x.x.x'
+            COMMIT_MSG="${{ github.event.head_commit.message }}"
+            VERSION=$(echo "$COMMIT_MSG" | grep -oE "[0-9]+\.[0-9]+\.[0-9]+" | head -n 1)
+            
+            if [ -z "$VERSION" ]; then
+              echo "⚠️ No version pattern found in commit message. Skipping auto-version update."
+              # Optional: You might want to fail here if version MUST be found
+              # exit 1
+            else
+              echo "🚀 Extracted version from commit: $VERSION"
+            fi
           fi
-          echo "🚀 Using version: $VERSION"
-          python scripts/update_version.py "$VERSION"
+          
+          if [ -n "$VERSION" ]; then
+            python scripts/update_version.py "$VERSION"
+          fi
 
       - name: Build sdist and wheel
         run: python -m build
