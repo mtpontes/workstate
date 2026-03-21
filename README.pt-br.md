@@ -668,26 +668,53 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 </details>
 
 
-## Build e Instalação Local
+<details>
+  <summary><h2>Desenvolvimento a partir do Código-fonte</h2></summary>
 
-Se você deseja buildar e instalar o Workstate a partir do código-fonte:
+### 1. Build e Instalação Local
+Se você deseja buildar e instalar o Workstate para fins de desenvolvimento:
 
-1. **Limpar builds anteriores** (opcional):
+1. **Configurar Ambiente de Desenvolvimento**:
    ```bash
-   # Windows (PowerShell)
-   Remove-Item -Recurse -Force dist, build
-   ```
-2. **Gerar o build**:
-   ```bash
-   python -m build
-   ```
-3. **Instalar o pacote gerado**:
-   ```bash
-   pip install dist/workstate-1.2.1-py3-none-any.whl --force-reinstall
+   git clone https://github.com/mtpontes/workstate.git
+   cd workstate
+   pip install -r requirements.txt
    ```
 
-Após a instalação, verifique com `workstate --version`.
+2. **Gerar Build e Instalar**:
+   Utilize os scripts de conveniência definidos no `pyproject.toml` (requer [Hatch](https://hatch.pypa.io/)):
+   ```bash
+   # Limpar builds anteriores
+   hatch run clean
+   
+   # Buildar e reinstalar localmente com força
+   hatch run build-local
+   ```
 
+### 2. Desenvolvimento da Documentação
+A documentação é construída com [Starlight (Astro)](https://starlight.astro.build/).
+
+1. **Pré-requisitos**:
+   - Node.js v22 (gerenciado via [nvm](https://github.com/coreybutler/nvm-windows))
+
+2. **Rodar Servidor Local**:
+   ```bash
+   # Usando o atalho
+   hatch run docs-serve
+   
+   # Ou manualmente
+   cd docs-site
+   nvm use 22
+   npm install
+   npm run dev
+   ```
+
+3. **Gerar Build da Documentação**:
+   ```bash
+   cd docs-site
+   npm run build
+   ```
+</details>
 
 ## Apoie o Projeto
 

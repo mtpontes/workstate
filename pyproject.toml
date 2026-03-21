@@ -27,6 +27,19 @@ dependencies = [
 [project.scripts]
 workstate = "src.cli.cli:app"
 
+[tool.hatch.envs.default.scripts]
+docs-serve = [
+  "nvm use 22",
+  "npm run dev --prefix docs-site"
+]
+build-local = [
+    "python -m build",
+    "pip install dist/*.whl --force-reinstall"
+]
+clean = [
+    "rm -rf dist build *.egg-info"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 

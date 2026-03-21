@@ -666,25 +666,53 @@ Be careful not to include in your `.workstateignore` (meaning, do not capture):
 </details>
 
 
-## Build and Local Installation
+<details>
+  <summary><h2>Development from Source</h2></summary>
 
-If you want to build and install Workstate from source for development:
+### 1. Build and Local Installation
+If you want to build and install Workstate for development purposes:
 
-1. **Clean previous builds** (optional):
+1. **Setup Development Environment**:
    ```bash
-   # Windows (PowerShell)
-   Remove-Item -Recurse -Force dist, build
-   ```
-2. **Build the package**:
-   ```bash
-   python -m build
-   ```
-3. **Install the wheel**:
-   ```bash
-   pip install dist/workstate-1.2.1-py3-none-any.whl --force-reinstall
+   git clone https://github.com/mtpontes/workstate.git
+   cd workstate
+   pip install -r requirements.txt
    ```
 
-After installation, verify with `workstate --version`.
+2. **Build and Install**:
+   Use the convenience scripts defined in `pyproject.toml` (requires [Hatch](https://hatch.pypa.io/)):
+   ```bash
+   # Clean previous builds
+   hatch run clean
+   
+   # Build and force-reinstall locally
+   hatch run build-local
+   ```
+
+### 2. Documentation Development
+The documentation is built with [Starlight (Astro)](https://starlight.astro.build/).
+
+1. **Requirements**:
+   - Node.js v22 (managed via [nvm](https://github.com/coreybutler/nvm-windows))
+
+2. **Run Local Server**:
+   ```bash
+   # Using the shortcut
+   hatch run docs-serve
+   
+   # Or manually
+   cd docs-site
+   nvm use 22
+   npm install
+   npm run dev
+   ```
+
+3. **Build Documentation**:
+   ```bash
+   cd docs-site
+   npm run build
+   ```
+</details>
 
 
 ## Support the Project

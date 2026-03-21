@@ -1,0 +1,47 @@
+---
+title: Bem-vindo ao Workstate
+description: Ferramenta de gerenciamento de estado de ambiente de desenvolvimento portátil.
+template: splash
+hero:
+  tagline: Preserve e restaure o estado completo do seu ambiente de desenvolvimento entre diferentes máquinas.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Começar agora
+      link: /workstate/guides/installation/
+      icon: right-arrow
+    - text: Ver no GitHub
+      link: https://github.com/mtpontes/workstate
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Por que usar o Workstate?
+
+<CardGrid stagger>
+	<Card title="Portabilidade Total" icon="rocket">
+		Continue trabalhando em qualquer máquina com exatamente o mesmo setup: bancos de dados locais, configs de IDE e arquivos .env.
+	</Card>
+	<Card title="Segurança em Primeiro Lugar" icon="lock">
+		Criptografia AES no lado do cliente (`--encrypt`) garante que seus backups no S3 fiquem protegidos.
+	</Card>
+	<Card title="Integração com Git" icon="git">
+		Hooks automáticos para lembrar você de salvar o estado antes do push ou restaurar após trocar de branch.
+	</Card>
+	<Card title="Fácil de Usar" icon="setting">
+		Interface CLI rica com suporte a **fuzzy search**, barras de progresso e menus interativos.
+	</Card>
+</CardGrid>
+
+---
+
+## O que o Workstate captura?
+
+O Workstate foi desenhado para capturar tudo o que o controle de versão tradicional (Git) ignora:
+
+- **Variáveis de Ambiente**: `.env`, `.env.local`, arquivos de configuração.
+- **Configurações de IDE**: Projetos do VS Code (`.vscode/`), IntelliJ (`.idea/`), etc.
+- **Bancos de Dados Locais**: Arquivos SQLite, dumps de banco local.
+- **Dados de Desenvolvimento**: Dados de teste, mocks, assets locais.
