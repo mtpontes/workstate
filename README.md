@@ -65,18 +65,6 @@ If you are using `workstate.exe`, ignore this topic.
 - AWS account with S3 access
 - pip
 
-### Dependencies
-
-- **typer**: CLI Framework
-- **rich**: Terminal formatting
-- **boto3**: AWS SDK for Python
-- **pyperclip**: Cross-platform clipboard support
-
-### Configuration Files
-
-- **`.workstateignore`**: Defines files/directories to include/exclude
-- **`~/.workstate/config.json`**: Stores AWS credentials
-
 ### Install via pip (Recommended)
 
 ```bash
