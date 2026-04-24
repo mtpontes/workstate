@@ -14,6 +14,7 @@ from src.services import state_service
 from src.views import share_info_view
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
 from src.utils.clipboard_utils import copy_to_clipboard
+from src.clients import s3_client
 
 
 class ShareCommandImpl:
@@ -32,6 +33,7 @@ class ShareCommandImpl:
         self.expiration_hours = expiration_hours
 
     def execute(self) -> None:
+        s3_client.validate_credentials()
         try:
             selected_state: str | None = self.prompter.prompt()
             if not selected_state:

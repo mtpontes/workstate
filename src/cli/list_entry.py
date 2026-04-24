@@ -17,6 +17,7 @@ def register(app: typer, console: Console, list_view: list_view, state_service: 
         interactive: bool = typer.Option(
             False, "--interactive", "-i", help="Interactive mode with fuzzy search"
         ),
+        use_cache: bool = typer.Option(True, "--cache/--no-cache", help="Use local metadata cache (default: True)"),
     ) -> None:
         """Lists all project states available in AWS S3
 
@@ -50,7 +51,8 @@ def register(app: typer, console: Console, list_view: list_view, state_service: 
                 interactive=interactive,
                 system_filter=system,
                 branch_filter=branch,
-                older_than_filter=older_than
+                older_than_filter=older_than,
+                use_cache=use_cache
             ).execute()
         except Exception as e:
             handle_error(console, e)

@@ -17,6 +17,8 @@ Functions:
 """
 
 import json
+import math
+import re
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -129,19 +131,44 @@ def zip_files(files: list[Path], metadata: dict = None) -> Path:
         return tmp_file_path
 
 
-def unzip(zip_file: Path) -> None:
+def unzip(zip_file: Path, extract_to: Path = None, path_filters: list[str] = None) -> None:
     """
-    Extracts the contents of a .zip file into the current directory.
+    Extracts the contents of a .zip file into the specified directory (defaults to current).
 
     If the extracted file already exists, a new name is automatically generated to prevent overwriting.
+    Optional path_filters can be provided to extract only specific files or directories (glob patterns supported).
 
     Args:
-        zip_file(Path): Path to the .zip file to be extracted.
+        zip_file (Path): Path to the .zip file to be extracted.
+        extract_to (Path, optional): Path where files should be extracted. Defaults to current directory.
+        path_filters (list[str], optional): List of glob patterns or path prefixes to extract.
     """
-    extract_to = Path.cwd()
+    import fnmatch
+    if extract_to is None:
+        extract_to = Path.cwd()
 
     with ZipFile(zip_file, READ_OPERATOR) as zip_ref:
         for member in zip_ref.infolist():
+            # Skip metadata file if present and not explicitly requested
+            if member.filename == ".metadata.json" and (not path_filters or ".metadata.json" not in path_filters):
+                continue
+                
+            # Filtering logic
+            if path_filters:
+                match_found = False
+                for pattern in path_filters:
+                    # Direct prefix match (for directories ending with /)
+                    if pattern.endswith("/") and member.filename.startswith(pattern):
+                        match_found = True
+                        break
+                    # Exact match or Glob match
+                    if member.filename == pattern or fnmatch.fnmatch(member.filename, pattern):
+                        match_found = True
+                        break
+                
+                if not match_found:
+                    continue
+
             extracted_path = extract_to / member.filename
 
             if member.is_dir():
@@ -245,3 +272,85 @@ def compare_files(local_files: list[Path], remote_contents: list[dict]) -> list[
             results.append({"status": "DELETED", "path": path, "local_size": None, "remote_size": remote_size})
             
     return results
+
+
+def calculate_sha256(file_path: Path) -> str:
+    """Calculates SHA256 hash of a file."""
+    import hashlib
+    sha256_hash = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for byte_block in iter(lambda: f.read(4096), b""):
+            sha256_hash.update(byte_block)
+    return sha256_hash.hexdigest()
+
+
+def _calculate_entropy(text: str) -> float:
+    """Calculates Shannon entropy of a string."""
+    if not text:
+        return 0.0
+    
+    probabilities = [text.count(c) / len(text) for c in set(text)]
+    entropy = -sum(p * math.log2(p) for p in probabilities)
+    return entropy
+
+
+def _contains_secrets(text: str) -> bool:
+    """Checks if text contains secrets based on Regex patterns."""
+    patterns = [
+        r"AKIA[0-9A-Z]{16}", # AWS Access Key
+        r"ASIA[0-9A-Z]{16}", # AWS Session Key
+        r"[a-zA-Z0-9+/]{40}", # Generic High-Entropy (potential Secret Key)
+        r"ghp_[a-zA-Z0-9]{36}", # GitHub Personal Access Token
+        r"AIza[0-9A-Za-z-_]{35}", # Google API Key
+    ]
+    for pattern in patterns:
+        if re.search(pattern, text):
+            # For the generic 40-char pattern, check entropy to avoid false positives
+            match = re.search(pattern, text)
+            if match and len(match.group(0)) == 40:
+                if _calculate_entropy(match.group(0)) > 3.0:
+                    return True
+                continue
+            return True
+    return False
+
+
+def scan_file_for_secrets(file_path: str) -> list[str]:
+    """Scans a single file for potential secrets."""
+    findings = []
+    path = Path(file_path)
+    
+    # Only scan text files or specific extensions
+    text_extensions = {'.txt', '.py', '.js', '.ts', '.env', '.json', '.yml', '.yaml', '.tf', '.sh'}
+    if path.suffix.lower() not in text_extensions and path.suffix != '':
+        return []
+
+    try:
+        content = path.read_text(encoding="utf-8", errors="ignore")
+        lines = content.splitlines()
+        for i, line in enumerate(lines):
+            if _contains_secrets(line):
+                findings.append(f"Line {i+1}: Potential secret found in {path.name}")
+            
+            # Additional check for raw high entropy strings in long lines
+            elif len(line) > 32:
+                # Simple split by whitespace and quotes
+                parts = re.split(r"[\s'\"=]+", line)
+                for part in parts:
+                    if len(part) > 32 and _calculate_entropy(part) > 3.8:
+                        findings.append(f"Line {i+1}: High entropy string detected in {path.name}")
+                        break
+    except Exception as e:
+        log.warning("Could not scan file %s: %s", file_path, str(e))
+        
+    return findings
+
+
+def scan_files_for_secrets(files: list[Path]) -> list[str]:
+    """Scans multiple files for secrets in their content."""
+    all_findings = []
+    for f in files:
+        if f.is_file():
+            findings = scan_file_for_secrets(str(f))
+            all_findings.extend(findings)
+    return all_findings

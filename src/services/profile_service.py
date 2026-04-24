@@ -71,8 +71,8 @@ class ProfileService:
             return {}
 
     @classmethod
-    def push_profile(cls, name: str) -> None:
-        """Uploads a local profile content to S3."""
+    def push_profile(cls, name: str, password: Optional[str] = None) -> None:
+        """Uploads a local profile content to S3, optionally encrypted."""
         content = cls.get_local_profile(name)
         if not content:
             raise ValueError(f"Local profile '{name}' not found.")
@@ -82,29 +82,47 @@ class ProfileService:
             raise Exception("AWS Bucket not configured. Run 'workstate configure' first.")
 
         bucket = s3_client.create_s3_resource()
-        key = f"{S3_PROFILES_PREFIX}{name}.txt"
+        
+        from src.utils import utils
+        if password:
+            key = f"{S3_PROFILES_PREFIX}{name}.enc"
+            body = utils.encrypt_string(content, password)
+        else:
+            key = f"{S3_PROFILES_PREFIX}{name}.txt"
+            body = content.encode("utf-8")
         
         try:
-            # bucket is already a s3.Bucket resource
-            bucket.Object(key).put(
-                Body=content.encode("utf-8")
-            )
+            bucket.Object(key).put(Body=body)
         except Exception as e:
             raise Exception(f"S3 Upload failed: {str(e)}")
 
     @classmethod
-    def pull_profile(cls, name: str) -> None:
+    def pull_profile(cls, name: str, password: Optional[str] = None) -> None:
         """Downloads a profile from S3 and saves it locally."""
         aws_credentials = ConfigService.get_aws_credentials()
         if not aws_credentials.bucket_name:
             raise Exception("AWS Bucket not configured.")
 
         bucket = s3_client.create_s3_resource()
-        key = f"{S3_PROFILES_PREFIX}{name}.txt"
         
+        # Try finding as .enc first, then .txt
+        key_enc = f"{S3_PROFILES_PREFIX}{name}.enc"
+        key_txt = f"{S3_PROFILES_PREFIX}{name}.txt"
+        
+        from src.utils import utils
         try:
-            response = bucket.Object(key).get()
-            content = response['Body'].read().decode("utf-8")
+            # Check if .enc exists
+            try:
+                response = bucket.Object(key_enc).get()
+                encrypted_bytes = response['Body'].read()
+                if not password:
+                    raise ValueError(f"Profile '{name}' is encrypted. Password required.")
+                content = utils.decrypt_string(encrypted_bytes, password)
+            except bucket.meta.client.exceptions.NoSuchKey:
+                # Try .txt
+                response = bucket.Object(key_txt).get()
+                content = response['Body'].read().decode("utf-8")
+            
             cls.save_local_profile(name, content)
         except Exception as e:
             raise Exception(f"Failed to pull profile '{name}' from S3: {str(e)}")
@@ -129,6 +147,8 @@ class ProfileService:
                 name = key.replace(S3_PROFILES_PREFIX, "")
                 if name.endswith(".txt"):
                     name = name[:-4]
+                elif name.endswith(".enc"):
+                    name = name[:-4] + " [protected]"
                 
                 if name:
                     profiles.append(name)
@@ -144,5 +164,6 @@ class ProfileService:
             raise Exception("AWS Bucket not configured.")
 
         bucket = s3_client.create_s3_resource()
-        key = f"{S3_PROFILES_PREFIX}{name}.txt"
-        bucket.Object(key).delete()
+        # Delete both possibilities
+        bucket.Object(f"{S3_PROFILES_PREFIX}{name}.txt").delete()
+        bucket.Object(f"{S3_PROFILES_PREFIX}{name}.enc").delete()

@@ -35,7 +35,7 @@ class DownloadPreSignedCommandImpl:
         output_file: Path = self._get_output_file(filename)
 
         self._download_file(self.url, output_file)
-        self.console.print(f"[green]✔ Downloaded successfully: {output_file}[/green]")
+        self.console.print(f"[green][OK] Downloaded successfully: {output_file}[/green]")
 
         if self.extract and output_file.suffix.lower() == DOT_ZIP:
             self._extract_zip(output_file)

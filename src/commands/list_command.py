@@ -19,6 +19,7 @@ from src.views import list_view
 from src.services import state_service
 from src.commands.command import CommandI
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.clients import s3_client
 
 
 class ListCommandImpl(CommandI):
@@ -32,6 +33,7 @@ class ListCommandImpl(CommandI):
         system_filter: str = None,
         branch_filter: str = None,
         older_than_filter: str = None,
+        use_cache: bool = True
     ):
         self.console = console
         self.views = views
@@ -41,17 +43,20 @@ class ListCommandImpl(CommandI):
         self.system_filter = system_filter
         self.branch_filter = branch_filter
         self.older_than_filter = older_than_filter
+        self.use_cache = use_cache
 
     def execute(self) -> None:
+        s3_client.validate_credentials()
         if self.interactive and self.prompter:
             self.prompter.prompt()
             return
 
         with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
-            zip_files: list[ObjectSummary] = self.state_service.list_states(
+            zip_files: list[StateDTO] = self.state_service.list_states(
                 system=self.system_filter,
                 branch=self.branch_filter,
-                older_than=self.older_than_filter
+                older_than=self.older_than_filter,
+                use_cache=self.use_cache
             )
 
         table: Table = self.views.zip_files_table(zip_files)

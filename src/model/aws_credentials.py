@@ -7,7 +7,7 @@ from src.exception.credentials_validation_exception import CredentialsValidation
 class AWSCredentials:
     VALID_REGIONS = boto3.session.Session().get_available_regions("s3")
 
-    def __init__(self, access_key_id: str, secret_access_key: str, bucket_name: str, region: str = None):
+    def __init__(self, access_key_id: str, secret_access_key: str, bucket_name: str, region: str = None, endpoint_url: str = None):
         if region is None:
             region = DEFAULT_AWS_REGION
 
@@ -15,7 +15,13 @@ class AWSCredentials:
         self._validate_not_blank_accumulative(ACCESS_KEY_ID, access_key_id, validation_errors)
         self._validate_not_blank_accumulative(SECRET_ACCESS_KEY, secret_access_key, validation_errors)
         self._validate_not_blank_accumulative(BUCKET_NAME, bucket_name, validation_errors)
-        self._validate_region_accumulative(region, validation_errors)
+        
+        # Only validate region against official AWS list if no custom endpoint is provided
+        if not endpoint_url:
+            self._validate_region_accumulative(region, validation_errors)
+        else:
+            self._validate_not_blank_accumulative(REGION, region, validation_errors)
+            
         if validation_errors:
             raise CredentialsValidationException(validation_errors)
 
@@ -23,6 +29,7 @@ class AWSCredentials:
         self.secret_access_key = secret_access_key.strip()
         self.region = region.strip()
         self.bucket_name = bucket_name.strip()
+        self.endpoint_url = endpoint_url.strip() if endpoint_url else None
 
     def _validate_not_blank_accumulative(self, field: str, value: str, errors: dict[str, str]) -> None:
         if not value or not value.strip():

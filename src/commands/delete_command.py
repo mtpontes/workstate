@@ -3,6 +3,7 @@ from rich.console import Console
 from src.services import state_service
 from src.commands.command import CommandI
 from src.prompts.zip_file_selector_prompter import ZipFileSelectorPrompter
+from src.clients import s3_client
 
 
 class DeleteCommandImpl(CommandI):
@@ -17,6 +18,7 @@ class DeleteCommandImpl(CommandI):
         self.state_service = state_service
 
     def execute(self) -> None:
+        s3_client.validate_credentials()
         selected_zip_file: str = self.prompter.prompt(message="Select a zip file to delete:")
 
         with self.console.status("[bold green]Deleting state...", spinner="dots"):

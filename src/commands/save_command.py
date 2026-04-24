@@ -28,6 +28,7 @@ from rich.panel import Panel
 from src.utils import utils, system_info
 from src.services import file_service, state_service
 from src.commands.command import CommandI
+from src.clients import s3_client
 
 
 class SaveCommandImpl(CommandI):
@@ -59,16 +60,34 @@ class SaveCommandImpl(CommandI):
 
 
     def execute(self) -> None:
+        s3_client.validate_credentials()
         files_to_save: list[Path] = self.file_service.select_files()
 
-        # Sensitive files scan
+        # Sensitive files scan (Filenames)
         sensitive_files = self.file_service.scan_for_sensitive_files(files_to_save)
-        if sensitive_files and not self.force:
+        # Advanced Content Scan
+        with self.console.status("[bold blue]Scanning file contents for secrets...", spinner="dots"):
+            content_findings = self.file_service.scan_files_for_secrets(files_to_save)
+
+        if (sensitive_files or content_findings) and not self.force:
+            warning_msg = "[bold red]DANGER:[/bold red] Potential secrets detected!\n\n"
+            if sensitive_files:
+                warning_msg += "[bold cyan]Sensitive Files (Names):[/bold cyan]\n"
+                warning_msg += "\n".join([f"- [yellow]{f.relative_to(Path.cwd())}[/yellow]" for f in sensitive_files])
+                warning_msg += "\n\n"
+            
+            if content_findings:
+                warning_msg += "[bold cyan]Content Scanning Findings:[/bold cyan]\n"
+                warning_msg += "\n".join([f"- [orange3]{f}[/orange3]" for f in content_findings[:10]]) # Limit display
+                if len(content_findings) > 10:
+                    warning_msg += f"\n... and {len(content_findings) - 10} more findings."
+                warning_msg += "\n\n"
+            
+            warning_msg += "[bold white]Uploading these files to the cloud can be dangerous.[/bold white]"
+
             self.console.print(
                 Panel(
-                    "[bold red]DANGER:[/bold red] Sensitive files detected in the backup list!\n\n"
-                    + "\n".join([f"- [yellow]{f.relative_to(Path.cwd())}[/yellow]" for f in sensitive_files])
-                    + "\n\n[bold white]Uploading these files to the cloud can be dangerous.[/bold white]",
+                    warning_msg,
                     title="Security Warning",
                     border_style="red",
                 )
@@ -188,5 +207,5 @@ class SaveCommandImpl(CommandI):
         temporary_file_to_upload.unlink()
 
         self.console.print(
-            f"\n[bold green]✔ State '{self.state_name}' saved successfully to S3 as '{zip_file_name}'[/bold green]\n"
+            f"\n[bold green][OK] State '{self.state_name}' saved successfully to S3 as '{zip_file_name}'[/bold green]\n"
         )

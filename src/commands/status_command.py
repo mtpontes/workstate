@@ -41,7 +41,7 @@ class StatusCommandImpl(CommandI):
             files_to_save: list[Path] = self.file_service.select_files()
 
         if not files_to_save:
-            self.console.print("[bold green]✔ No files found.[/bold green]")
+            self.console.print("[bold green][OK] No files found.[/bold green]")
             return
 
         table: Table = self.view.status_files(files_to_save)

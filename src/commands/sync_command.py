@@ -5,6 +5,7 @@ from rich.console import Console
 from src.commands.command import CommandI
 from src.services import state_service, file_service
 from src.utils import utils
+from src.clients import s3_client
 
 class SyncCommandImpl(CommandI):
     def __init__(
@@ -20,6 +21,7 @@ class SyncCommandImpl(CommandI):
         self.retention = retention
 
     def execute(self) -> None:
+        s3_client.validate_credentials()
         self.console.print("[bold blue]Starting environment sync...[/bold blue]")
 
         # 1. Check for changes compared to the last state
@@ -35,7 +37,7 @@ class SyncCommandImpl(CommandI):
                     diff = self.file_service.compare_files(local_files, remote_contents)
                     
                     if not any(res["status"] != "EQUAL" for res in diff):
-                        self.console.print("[green]✔ No changes detected since last backup. Skipping sync.[/green]")
+                        self.console.print("[green][OK] No changes detected since last backup. Skipping sync.[/green]")
                         return
                 except Exception as e:
                     self.console.print(f"[dim]Note: Could not perform deep comparison ({str(e)}). Proceeding with backup...[/dim]")
@@ -72,4 +74,4 @@ class SyncCommandImpl(CommandI):
                     except Exception as e:
                         self.console.print(f"[red]Failed to delete old checkpoint {state.key}:[/red] {str(e)}")
 
-        self.console.print("\n[bold green]✔ Sync completed successfully.[/bold green]")
+        self.console.print("\n[bold green][OK] Sync completed successfully.[/bold green]")

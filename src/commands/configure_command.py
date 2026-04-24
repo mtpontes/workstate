@@ -53,11 +53,51 @@ class ConfigureCommandImpl(CommandI):
 
         if self.interactive:
             credentials: AWSCredentialsDTO = self.prompter.prompt(self.credentials)
+        else:
+            credentials: AWSCredentialsDTO = self.credentials
 
         self._save_credentials(credentials)
 
+        # Check if bucket exists and offer to create it
+        if self.interactive:
+            self._check_and_create_bucket(credentials)
+        
+        # Add to history for future configuration ease
+        ConfigService.add_to_bucket_history(credentials.bucket_name)
+
         self.console.print(f"Configuration saved to: {ConfigService.CONFIG_FILE}")
         self.console.print("[green]✓ AWS credentials configured successfully![/green]\n")
+
+    def _check_and_create_bucket(self, credentials: AWSCredentialsDTO) -> None:
+        from src.clients import s3_client
+        from botocore.exceptions import ClientError
+        
+        bucket_name = credentials.bucket_name
+        region = credentials.region
+        
+        try:
+            # Check if bucket exists and is accessible
+            # Note: We must create a client with THE NEW credentials just provided
+            # S3resource factory uses ConfigService which we just updated
+            s3_resource = s3_client.create_s3_resource()
+            s3_resource.meta.client.head_bucket(Bucket=bucket_name)
+            self.console.print(f"[green][OK] Bucket '{bucket_name}' already exists and is accessible.[/green]")
+        except ClientError as e:
+            error_code = e.response.get("Error", {}).get("Code")
+            # 404 means not found, 403 means forbidden (might exist but no access)
+            if error_code == "404":
+                self.console.print(f"\n[yellow]⚠ Bucket '{bucket_name}' does not exist.[/yellow]")
+                if typer.confirm(f"Would you like to create bucket '{bucket_name}' in region '{region}'?", default=True):
+                    with self.console.status(f"[bold green]Creating bucket {bucket_name}...", spinner="dots"):
+                        s3_client.create_bucket(bucket_name, region)
+                        s3_client.put_public_access_block(bucket_name, region)
+                    self.console.print(f"[green][OK] Bucket '{bucket_name}' created successfully with public access blocked.[/green]")
+            elif error_code == "403":
+                self.console.print(f"[red]✖ Access denied to bucket '{bucket_name}'. Please check your permissions.[/red]")
+            else:
+                self.console.print(f"[red]✖ Error checking bucket: {str(e)}[/red]")
+        except Exception as e:
+            self.console.print(f"[red]✖ Unexpected error while checking bucket: {str(e)}[/red]")
 
     def _save_credentials(self, credentials: AWSCredentialsDTO) -> None:
         validated_credentials: AWSCredentials = None

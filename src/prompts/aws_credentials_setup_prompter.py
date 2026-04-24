@@ -95,15 +95,57 @@ class AWSCredentialsSetupPrompter(StringPrompterI):
     def _bucket_name_prompt(self, new_credentials, current_credentials):
         if not new_credentials.bucket_name:
             current_bucket = current_credentials.bucket_name
+            
+            # 2.2: Autodiscovery and History
+            from src.clients import s3_client
+            from InquirerPy import inquirer
+            from InquirerPy.utils import get_style
 
+            discovered_buckets = []
+            if new_credentials.access_key_id and new_credentials.secret_access_key:
+                # Need temporary save or direct pass of credentials to S3Client?
+                # For discovery, we temporarily use the provided ones in DTO
+                with self.console.status("[dim]Checking for existing Workstate buckets...", spinner="dots"):
+                    discovered_buckets = s3_client.list_workstate_buckets()
+
+            history = ConfigService.get_bucket_history()
+            
+            # Combine and deduplicate
+            options = sorted(list(set([current_bucket] + history + discovered_buckets)))
+            options = [o for o in options if o] # Remove empty
+            
             self.console.print("\n[bold cyan]S3 Bucket Name[/bold cyan]")
             self.console.print(f"[dim]Current: {current_bucket or 'Not configured'}[/dim]")
+            
+            if options:
+                self.console.print("[dim]Recent or discovered buckets:[/dim]")
+                custom_style = get_style({"questionmark": "#ef42f5 bold", "selected": "cyan bold"})
+                
+                choices = [{"name": b, "value": b} for b in options]
+                choices.append({"name": "[New Bucket / Manual Entry]", "value": "__MANUAL__"})
+                
+                selected = inquirer.select(
+                    message="Select a bucket or enter a new one:",
+                    choices=choices,
+                    style=custom_style,
+                    default=current_bucket if current_bucket in options else choices[0]["value"]
+                ).execute()
+                
+                if selected != "__MANUAL__":
+                    return selected
+
             self.console.print("[dim]Must be globally unique and follow S3 naming conventions[/dim]")
+            self.console.print("[italic yellow]Leave blank to generate a safe name automatically (e.g. workstate-storage-xxxxxx)[/italic yellow]")
 
             bucket_name = typer.prompt(
                 "Enter S3 Bucket Name",
-                default=current_bucket if current_bucket else BLANK,
+                default="",
             )
+
+            if not bucket_name:
+                import uuid
+                bucket_name = f"workstate-storage-{uuid.uuid4().hex[:6]}"
+                self.console.print(f"[green]Generated bucket name: {bucket_name}[/green]")
 
         return bucket_name
 

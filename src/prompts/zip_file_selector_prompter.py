@@ -13,16 +13,16 @@ processamento posterior.
 """
 
 import typer
+import typer
 from InquirerPy import inquirer
 from rich.console import Console
 from InquirerPy.utils import get_style
-from mypy_boto3_s3.service_resource import ObjectSummary
+from src.model.dto.state_dto import StateDTO
 
 from src.utils import utils
 from src.services import state_service
 from src.constants.constants import DATE_PATTERN, SPACE
 from src.prompts.string_prompter import StringPrompterI
-
 
 class ZipFileSelectorPrompter(StringPrompterI):
     def __init__(self, console: Console, state_service: state_service):
@@ -31,17 +31,17 @@ class ZipFileSelectorPrompter(StringPrompterI):
 
     def prompt(self, message: str = "Select a zip file:") -> str:
         with self.console.status("[bold green]Fetching state files from S3...", spinner="dots"):
-            zip_files: list[ObjectSummary] = self.state_service.list_states(global_scan=True)
+            zip_files: list[StateDTO] = self.state_service.list_states(global_scan=True)
         if not zip_files:
             self.console.print("[yellow]No ZIP files found in the S3 bucket.[/yellow]")
             raise typer.Exit(0)
 
         choices = [
             {
-                "name": f"{obj.key.ljust(40, SPACE)} | Size: {utils.format_file_size(obj.size).ljust(10)} | Last Modified: {obj.last_modified.strftime(DATE_PATTERN)}",
-                "value": obj.key,
+                "name": f"{state.key.ljust(40, SPACE)} | Size: {utils.format_file_size(state.size).ljust(10)} | Last Modified: {state.last_modified.strftime(DATE_PATTERN)}",
+                "value": state.key,
             }
-            for obj in zip_files
+            for state in zip_files
         ]
 
         custom_style = get_style(

@@ -17,17 +17,17 @@ def configurations_table(credentials: AWSCredentialsDTO) -> Table:
 
     table.add_column("Setting", style="cyan", width=20)
     table.add_column("Value", style="white")
-    table.add_column("Status", justify="center", width=3)
+    table.add_column("Status", justify="center", width=5)
 
     # Mask access key
     masked_access_key = f"{credentials.access_key_id[:3]}***"
     masked_secret_key = f"{credentials.secret_access_key[:3]}***"
 
     # Add lines to the table
-    table.add_row("Access Key ID", masked_access_key, "[green]✓[/green]")
-    table.add_row("Secret Access Key", masked_secret_key, "[green]✓[/green]")
-    table.add_row("Region", credentials.region, "[green]✓[/green]")
-    table.add_row("Bucket Name", credentials.bucket_name, "[green]✓[/green]")
+    table.add_row("Access Key ID", masked_access_key, "[green][OK][/green]")
+    table.add_row("Secret Access Key", masked_secret_key, "[green][OK][/green]")
+    table.add_row("Region", credentials.region, "[green][OK][/green]")
+    table.add_row("Bucket Name", credentials.bucket_name, "[green][OK][/green]")
 
     return table
 
@@ -81,15 +81,15 @@ def configurations_with_errors_table(errors: dict[str, str]) -> Table:
 
         for key, value in fields.items():
             if value is None:
-                table.add_row(key, "[green]✓ Configured[/green]")
+                table.add_row(key, "[green]v Configured[/green]")
                 continue
 
             if key.upper() == "Region".upper():
                 if "Invalid region" in value:
-                    table.add_row(key.title(), "[red]✗ Invalid region[/red]")
+                    table.add_row(key.title(), "[red]x Invalid region[/red]")
                     continue
             key_formatted: str = key.replace("_", " ").title()
-            table.add_row(key_formatted, "[red]✗ Not configured[/red]")
+            table.add_row(key_formatted, "[red]x Not configured[/red]")
 
     add_rows(error_table, errors)
     return error_table
