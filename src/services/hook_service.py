@@ -48,7 +48,7 @@ class HookService:
                 # Use shell=True to allow complex commands (pipes, etc.)
                 result = subprocess.run(cmd, shell=True, check=True, text=True, capture_output=False)
                 if result.returncode == 0:
-                    self.console.print(f"[green]✔ Command finished successfully.[/green]")
+                    self.console.print(f"[green][OK] Command finished successfully.[/green]")
             except subprocess.CalledProcessError as e:
                 self.console.print(f"[bold red]Error executing command:[/bold red] {cmd}")
                 self.console.print(f"[red]{str(e)}[/red]")

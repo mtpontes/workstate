@@ -41,6 +41,7 @@ class DownloadCommandImpl(CommandI):
         state_service: state_service,
         hook_service: any = None,
         yes_to_hooks: bool = False,
+        path_filters: list[str] = None,
     ) -> None:
         self.only_download = only_download
         self.console = console
@@ -48,8 +49,10 @@ class DownloadCommandImpl(CommandI):
         self.state_service = state_service
         self.hook_service = hook_service
         self.yes_to_hooks = yes_to_hooks
+        self.path_filters = path_filters
 
     def execute(self) -> None:
+        s3_client.validate_credentials()
         """
         Displays an interactive menu for the user to select a zip file from the listed files.
 
@@ -86,6 +89,35 @@ class DownloadCommandImpl(CommandI):
             zip_file: Path = self.state_service.download_state_file(
                 selected_zip_file, callback=progress_callback
             )
+        
+        # Integrity Check
+        metadata = obj.metadata
+        remote_sha256 = metadata.get("state-sha256")
+        if remote_sha256:
+            with self.console.status("[bold green]Verifying SHA256 integrity...", spinner="dots"):
+                local_sha256 = file_service.calculate_sha256(zip_file)
+                if local_sha256 != remote_sha256:
+                    self.console.print(f"\n[bold red]CRITICAL: INTEGRITY FAILURE![/bold red]")
+                    self.console.print(f"The downloaded file hash does not match the remote metadata.")
+                    self.console.print(f"Remote SHA256: [cyan]{remote_sha256}[/cyan]")
+                    self.console.print(f"Local SHA256:  [red]{local_sha256}[/red]")
+                    
+                    # Move to corrupted folder
+                    from src.constants.constants import DOWNLOADS
+                    import shutil
+                    corrupted_dir = Path(DOWNLOADS) / "corrupted"
+                    corrupted_dir.mkdir(parents=True, exist_ok=True)
+                    corrupted_file = corrupted_dir / zip_file.name
+                    shutil.move(str(zip_file), str(corrupted_file))
+                    
+                    self.console.print(f"[yellow]Corrupted file moved to: {corrupted_file}[/yellow]")
+                    self.console.print("[red]Restoration aborted for safety.[/red]")
+                    return
+                else:
+                    self.console.print("[green][OK] Integrity verified (SHA256 match).[/green]")
+        else:
+            self.console.print("[yellow]⚠ Legacy state detection: No SHA256 hash found. Integrity cannot be verified.[/yellow]")
+
         self.console.print(f"\n[green]Downloaded:[/green] {zip_file}")
 
         # Environment and Git Traceability Validation
@@ -163,9 +195,9 @@ class DownloadCommandImpl(CommandI):
         if self.only_download:
             self.console.print("[blue]Only downloaded file. Skipped unpacking.[/blue]")
         else:
-            file_service.unzip(zip_file)
+            file_service.unzip(zip_file, path_filters=self.path_filters)
             zip_file.unlink()
-            self.console.print("[green]✔ State restored successfully.[/green]\n")
+            self.console.print("[green][OK] State restored successfully.[/green]\n")
             
             # Post-Restore Hooks
             if self.hook_service:

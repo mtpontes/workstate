@@ -40,6 +40,19 @@ clean = [
     "rm -rf dist build *.egg-info"
 ]
 
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+    "testcontainers[localstack]",
+    "moto[s3,athena,sts]",
+    "requests",
+]
+
+[tool.hatch.envs.test.scripts]
+run = "pytest {args:tests}"
+cov = "pytest --cov=src --cov-report=term-missing {args:tests}"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
 
@@ -60,3 +73,8 @@ select = ["E", "W", "F"]
 [tool.ruff.lint.isort]
 force-wrap-aliases = true
 split-on-trailing-comma = true
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore:The wait_for_logs function with string or callable predicates is deprecated:DeprecationWarning:testcontainers.localstack",
+]

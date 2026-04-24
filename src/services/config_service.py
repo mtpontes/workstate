@@ -80,6 +80,24 @@ class ConfigService:
             return json.load(f)
 
     @classmethod
+    def get_bucket_history(cls) -> list[str]:
+        """Gets the list of previously used buckets"""
+        config = cls.load_config()
+        return config.get("bucket_history", [])
+
+    @classmethod
+    def add_to_bucket_history(cls, bucket_name: str) -> None:
+        """Adds a bucket to the history if not already present"""
+        if not bucket_name:
+            return
+        config = cls.load_config()
+        history: list = config.get("bucket_history", [])
+        if bucket_name not in history:
+            history.append(bucket_name)
+            config["bucket_history"] = history
+            cls.save_config(config)
+
+    @classmethod
     def ensure_config_dir_exists(cls) -> None:
         """Creates the config directory if it doesn't exist"""
         cls.CONFIG_DIR.mkdir(exist_ok=True)

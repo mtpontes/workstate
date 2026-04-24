@@ -10,6 +10,7 @@ class AWSCredentialsDTO:
     secret_access_key: Optional[str] = None
     region: Optional[str] = None
     bucket_name: Optional[str] = None
+    endpoint_url: Optional[str] = None
 
     def to_aws_credentials_model(self) -> AWSCredentials:
         return AWSCredentials(**self.__dict__)

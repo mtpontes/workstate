@@ -63,6 +63,7 @@ from src.cli import (
     compare_entry,
     sync_entry,
     git_hook_entry,
+    dashboard_entry,
 )
 
 
@@ -71,6 +72,7 @@ app = typer.Typer(
     name="workstate",
     help="Portable development environment management tool",
     add_completion=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 
@@ -123,3 +125,4 @@ inspect_entry.register(app, console, state_service)
 compare_entry.register(app, console, state_service, file_service)
 sync_entry.register(app, console, state_service, file_service)
 git_hook_entry.register(app, console, hook_svc)
+dashboard_entry.register(app, console)

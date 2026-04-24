@@ -40,7 +40,11 @@ def get_current_timestamp() -> str:
 
 def get_project_name() -> str:
     """Returns the name of the current directory as the project name."""
-    return Path.cwd().name
+    name = Path.cwd().name
+    if not name:
+        # Happens when running from drive root (e.g., C:\)
+        return "root-drive"
+    return name
 
 
 def define_zip_file_name(project_name: str) -> str:
@@ -216,4 +220,19 @@ def decrypt_file(file_path: Path, password: str) -> Path:
     with open(decrypted_file_path, "wb") as f:
         f.write(decrypted_data)
 
-    return decrypted_file_path
+def encrypt_string(content: str, password: str) -> bytes:
+    """Encrypts a string and returns the bytes (salt + encrypted_data)."""
+    salt = os.urandom(16)
+    key = derive_key(password, salt)
+    fernet = Fernet(key)
+    encrypted_data = fernet.encrypt(content.encode("utf-8"))
+    return salt + encrypted_data
+
+
+def decrypt_string(encrypted_bytes: bytes, password: str) -> str:
+    """Decrypts bytes (salt + encrypted_data) and returns the string."""
+    salt = encrypted_bytes[:16]
+    data = encrypted_bytes[16:]
+    key = derive_key(password, salt)
+    fernet = Fernet(key)
+    return fernet.decrypt(data).decode("utf-8")

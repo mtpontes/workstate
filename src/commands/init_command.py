@@ -74,7 +74,7 @@ class InitCommandImpl(CommandI):
                 tool_name = selected_tool.value
 
             self.console.print(
-                Text(f"\n✔ .workstateignore created for tool/profile '{tool_name}' \n", style="bold green")
+                Text(f"\n[OK] .workstateignore created for tool/profile '{tool_name}' \n", style="bold green")
             )
 
         except ValueError as e:

@@ -2,6 +2,7 @@ import typer
 from rich.console import Console
 from src.services.pruning_service import PruningService
 from src.utils import utils
+from src.clients import s3_client
 
 
 
@@ -21,6 +22,7 @@ def prune(
     Remove old state files from S3, respecting protected states.
     """
     try:
+        s3_client.validate_credentials()
         service = PruningService(console)
         
         scope = "all projects" if all_projects else f"project '{utils.get_project_name()}'"

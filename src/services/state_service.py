@@ -6,10 +6,15 @@ from mypy_boto3_s3.service_resource import Bucket, ObjectSummary
 from src.clients import s3_client
 from src.constants.constants import DOT_ZIP, DOWNLOADS
 from src.services.config_service import ConfigService
+from src.services.cache_service import CacheService
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
 
 from src.utils import utils
+
+
+from datetime import datetime
+from src.model.dto.state_dto import StateDTO
 
 
 def _get_prefix() -> str:
@@ -21,46 +26,59 @@ def list_states(
     system: str = None, 
     branch: str = None, 
     older_than: str = None,
-    global_scan: bool = False
-) -> list[ObjectSummary]:
+    global_scan: bool = False,
+    use_cache: bool = True
+) -> list[StateDTO]:
     """
     Retrieve all `.zip` and `.enc` files from the configured S3 bucket.
     Includes objects in the current project's prefix and legacy root objects.
-    If global_scan is True, scans all objects in the bucket regardless of prefix.
 
     Args:
         system (str, optional): Filter by system metadata.
         branch (str, optional): Filter by branch metadata/tags.
         older_than (str, optional): Filter by age (e.g., '30d').
         global_scan (bool, optional): If True, ignores project prefix and scans everything.
+        use_cache (bool, optional): If True, attempts to use local cache before fetching from S3.
 
     Returns:
-        list[ObjectSummary]: A list of S3 objects representing state files.
+        list[StateDTO]: A list of DTOs representing state files.
     """
-    bucket_client: Bucket = s3_client.create_s3_resource()
-    # List all objects and filter locally to avoid complex S3 Delimiter/Prefix logic issues
-    all_objects = list(bucket_client.objects.all())
-    # Normalize filters: empty strings become None
-    system = system if system else None
-    branch = branch if branch else None
-    older_than = older_than if older_than else None
+    project_name = utils.get_project_name()
+    
+    # Try cache if not a global scan and caching is enabled
+    if use_cache and not global_scan and not (system or branch or older_than):
+        cached_data = CacheService.get_cached_states(project_name)
+        if cached_data:
+            states = []
+            for item in cached_data:
+                # Reconstruct datetime from string
+                item_copy = item.copy()
+                item_copy["last_modified"] = datetime.fromisoformat(item_copy["last_modified"])
+                states.append(StateDTO(**item_copy))
+            return states
 
+    bucket_client: Bucket = s3_client.create_s3_resource()
     prefix = _get_prefix()
-    filtered_objects = []
+
+    if global_scan:
+        all_objects = list(bucket_client.objects.all())
+    else:
+        # Optimization: Fetch only project objects and root (legacy) objects
+        project_objects = list(bucket_client.objects.filter(Prefix=prefix))
+        root_objects = list(bucket_client.objects.filter(Prefix="", Delimiter="/"))
+        all_objects = project_objects + root_objects
+
+    # Normalize filters
+    system = system.lower() if system else None
+    branch = branch.lower() if branch else None
     
     # Pre-parse duration for older_than filter
     cutoff_date = None
     if older_than:
         cutoff_date = utils.parse_duration_to_datetime(older_than)
 
+    state_dtos = []
     for obj in all_objects:
-        # If not global_scan, include only if it's in the current project's prefix OR it's at the root (legacy)
-        is_in_project = obj.key.startswith(prefix)
-        is_at_root = "/" not in obj.key
-        
-        if not global_scan and not (is_in_project or is_at_root):
-            continue
-            
         if not (obj.key.endswith(DOT_ZIP) or obj.key.endswith(".enc")):
             continue
 
@@ -69,7 +87,6 @@ def list_states(
         if obj.key.startswith(S3_PROFILES_PREFIX):
             continue
 
-
         # Apply older_than filter based on S3 LastModified
         if cutoff_date and obj.last_modified > cutoff_date:
             continue
@@ -77,18 +94,16 @@ def list_states(
         # If system or branch filters are provided, we need to check metadata/tags
         if system or branch:
             try:
-                # ObjectSummary needs to get the actual Object to fetch Metadata
                 response = obj.Object().get()
                 metadata = response.get("Metadata", {})
                 
                 if system:
                     remote_system = metadata.get("system", "").lower()
-                    if system.lower() != remote_system:
+                    if system != remote_system:
                         continue
                 
                 if branch:
                     remote_branch = metadata.get("git-branch", "").lower()
-                    # If not in metadata, check tags (as some versions might use tags)
                     if not remote_branch:
                         try:
                             tags_response = bucket_client.meta.client.get_object_tagging(Bucket=bucket_client.name, Key=obj.key)
@@ -97,18 +112,35 @@ def list_states(
                         except:
                             pass
                     
-                    if branch.lower() != remote_branch:
+                    if branch != remote_branch:
                         continue
-            except Exception as e:
-                # print(f"Warning: Could not fetch metadata for {obj.key}: {str(e)}")
-                # If we have filters and metadata fetch fails, we skip it by default (safer)
+            except:
                 continue
 
-        filtered_objects.append(obj)
+        state_dtos.append(StateDTO(
+            key=obj.key,
+            size=obj.size,
+            last_modified=obj.last_modified,
+            is_protected=is_protected(obj.key)
+        ))
 
     # Sort most recent first
-    filtered_objects.sort(key=lambda x: x.last_modified, reverse=True)
-    return filtered_objects
+    state_dtos.sort(key=lambda x: x.last_modified, reverse=True)
+
+    # Save to cache if not global scan and no filters were active (to keep cache "clean" for default list)
+    if not global_scan and not (system or branch or older_than):
+        cache_items = []
+        for dto in state_dtos:
+            item = {
+                "key": dto.key,
+                "size": dto.size,
+                "last_modified": dto.last_modified.isoformat(),
+                "is_protected": dto.is_protected
+            }
+            cache_items.append(item)
+        CacheService.save_states_to_cache(project_name, cache_items)
+
+    return state_dtos
 
 
 def get_state_content(object_key: str, password: str = None) -> list[dict]:
@@ -245,9 +277,15 @@ def save_state_file(
     if git_info.get("Git-Commit"):
         extra_args["Metadata"]["git-commit"] = git_info["Git-Commit"]
 
+    # Calculate and store SHA256 for integrity check
+    from src.services import file_service
+    extra_args["Metadata"]["state-sha256"] = file_service.calculate_sha256(zip_file)
+
     s3_client.create_s3_resource().upload_file(
         str(zip_file), full_key, ExtraArgs=extra_args, Callback=callback
     )
+    
+    CacheService.invalidate_project_cache(utils.get_project_name())
 
 
 def delete_state_file(s3_object_name: str, force: bool = False) -> None:
@@ -261,6 +299,7 @@ def delete_state_file(s3_object_name: str, force: bool = False) -> None:
         raise Exception(f"Cannot delete protected state: {s3_object_name}. Use --force or unprotect it first.")
         
     s3_client.create_s3_resource().Object(s3_object_name).delete()
+    CacheService.invalidate_project_cache(utils.get_project_name())
 
 
 def is_protected(s3_object_name: str) -> bool:

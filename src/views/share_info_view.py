@@ -25,7 +25,7 @@ def share_info_panel(selected_state: str, presigned_url: str, expiration_time: d
 
     return Panel(
         info_text,
-        title="[bold green]✔ Share URL Generated Successfully",
+        title="[bold green][OK] Share URL Generated Successfully",
         title_align="left",
         border_style="green",
         padding=(1, 2),

@@ -50,7 +50,7 @@ class CompareCommandImpl(CommandI):
 
         diff_found = any(res["status"] != "EQUAL" for res in results)
         if not diff_found:
-            self.console.print(f"\n[bold green]✔ Local project matches {self.state_name} perfectly.[/bold green]")
+            self.console.print(f"\n[bold green][OK] Local project matches {self.state_name} perfectly.[/bold green]")
             return
 
         table = compare_view.compare_results_table(self.state_name, results)

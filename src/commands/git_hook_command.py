@@ -18,7 +18,7 @@ class GitHookCommandImpl:
         if not git_root:
             raise WorkstateException("Not a git repository (or any of the parent directories).")
 
-        self.console.print(f"[green]✔ Git repository found at:[/green] {git_root}")
+        self.console.print(f"[green][OK] Git repository found at:[/green] {git_root}")
         
         with self.console.status("[bold blue]Installing hooks...[/bold blue]"):
             installed_hooks = self.hook_service.install_git_hooks(
@@ -30,7 +30,7 @@ class GitHookCommandImpl:
         if not installed_hooks:
             self.console.print("[yellow]! No hooks were installed (they might be already present or none selected).[/yellow]")
         else:
-            self.console.print("[green]✔ Git hooks installed successfully:[/green]")
+            self.console.print("[green][OK] Git hooks installed successfully:[/green]")
             for hook in installed_hooks:
                 self.console.print(f"  - {hook}")
             
@@ -46,7 +46,7 @@ class GitHookCommandImpl:
         if not git_root:
             raise WorkstateException("Not a git repository (or any of the parent directories).")
 
-        self.console.print(f"[green]✔ Git repository found at:[/green] {git_root}")
+        self.console.print(f"[green][OK] Git repository found at:[/green] {git_root}")
         
         with self.console.status("[bold blue]Removing hooks...[/bold blue]"):
             removed_hooks = self.hook_service.uninstall_git_hooks(git_root)
@@ -54,6 +54,6 @@ class GitHookCommandImpl:
         if not removed_hooks:
             self.console.print("[yellow]! No Workstate hooks were found to remove.[/yellow]")
         else:
-            self.console.print("[green]✔ Git hooks removed successfully:[/green]")
+            self.console.print("[green][OK] Git hooks removed successfully:[/green]")
             for hook in removed_hooks:
                 self.console.print(f"  - {hook}")

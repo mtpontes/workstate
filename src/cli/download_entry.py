@@ -19,6 +19,9 @@ def register(app: typer, console: Console, state_service: state_service, hook_se
         yes_to_hooks: bool = typer.Option(
             False, "--yes-to-hooks", "-y", help="Execute post-restore hooks without confirmation"
         ),
+        path_filters: list[str] = typer.Option(
+            None, "--path", help="Specific files or directories to restore (glob patterns supported)"
+        ),
     ) -> None:
         """Restores a saved project state from AWS S3
 
@@ -57,6 +60,7 @@ def register(app: typer, console: Console, state_service: state_service, hook_se
                 state_service=state_service,
                 hook_service=hook_service,
                 yes_to_hooks=yes_to_hooks,
+                path_filters=path_filters,
             ).execute()
         except Exception as e:
             handle_error(console, e)

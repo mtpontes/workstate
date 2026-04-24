@@ -56,7 +56,7 @@ class DoctorCommandImpl(CommandI):
                 border_style="red"
             ))
         else:
-            self.console.print("[bold green]✔ All systems operational![/bold green]\n")
+            self.console.print("[bold green][OK] All systems operational![/bold green]\n")
 
     def _check_local_config(self) -> tuple[bool, str]:
         """Verifies if the configuration file exists and is valid."""
