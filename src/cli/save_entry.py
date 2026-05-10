@@ -28,6 +28,9 @@ def register(app: typer, console: Console, file_service: file_service, state_ser
         protect: bool = typer.Option(
             False, "--protect", "-p", help="Protege o estado contra deleção acidental"
         ),
+        extra_includes: list[str] = typer.Option(
+            None, "--include", "-i", help="Arquivos ou padrões extras para incluir no snapshot"
+        ),
     ) -> None:
         """Saves the current state of the project to AWS S3
 
@@ -79,6 +82,7 @@ def register(app: typer, console: Console, file_service: file_service, state_ser
                 description=description,
                 tags=tags,
                 protect=protect,
+                extra_includes=extra_includes,
             ).execute()
 
 
