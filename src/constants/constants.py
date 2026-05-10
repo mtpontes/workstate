@@ -31,6 +31,7 @@ REGION: Final[str] = "region"
 DEFAULT_AWS_REGION: Final[str] = "us-east-1"
 
 IGNORE_FILE: Final[str] = ".workstateignore"
+INCLUDE_FILE: Final[str] = ".workstateinclude"
 DOT_ZIP: Final[str] = ".zip"
 DOWNLOADS: Final[str] = "downloads"
 
