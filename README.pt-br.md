@@ -23,7 +23,7 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 ## Principais Funcionalidades
 
 - **Organização por Prefixos S3**: Organiza automaticamente os backups em pastas baseadas no nome do projeto, permitindo gerenciar múltiplos projetos no mesmo bucket de forma limpa.
-- **Seleção Inteligente de Arquivos**: Usa arquivos `.workstateignore` (similar ao `.gitignore`) para definir o que deve ser incluído no snapshot do ambiente
+- **Seleção Inteligente de Arquivos**: Usa uma abordagem de **whitelist** via arquivos `.workstateinclude` para definir explicitamente o que deve ser capturado.
 - **Criptografia Client-side**: Proteja seus backups com criptografia AES baseada em senha (`--encrypt`)
 - **Interface Interativa**: CLI amigável com formatação rica, menus interativos e **busca fuzzy**
 - **Progresso em Tempo Real**: Feedback visual em tempo real durante o upload e download
@@ -33,7 +33,7 @@ O Workstate resolve esses problemas criando snapshots comprimidos do seu ambient
 - **Inspeção Profunda**: Visualize o conteúdo de um ZIP e metadados diretamente no S3 sem baixar (comando `inspect`)
 - **Rotação Automatizada**: Backups rotativos inteligentes com retenção configurável (comando `sync`)
 - **Proteção de Estado**: Proteja estados importantes contra deleção acidental (comando `protect`)
-- **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento
+- **Integração AWS S3**: Armazenamento seguro na nuvem para seus estados de desenvolvimento. Agora com suporte a **Global Scan** para encontrar estados em todos os projetos.
 - **Compartilhamento**: Compartilhe/importe estados utilizando URLs pré-assinadas temporárias e cópia automática para o clipboard
 - **Integração com Git Hooks**: Ganchos de Git opcionais para te lembrar de salvar seu estado antes de um push ou restaurar após trocar de branch
 - **Notificações de Atualização**: Verificações automáticas em segundo plano para garantir que você esteja sempre na versão mais recente
@@ -73,7 +73,7 @@ Se você for utilizar o `workstate.exe` ignore esse tópico.
 
 ### Arquivos de Configuração
 
-- **`.workstateignore`**: Define arquivos/diretórios a serem incluídos/excluídos
+- **`.workstateinclude`**: Define arquivos/diretórios a serem incluídos explicitamente
 - **`~/.workstate/config.json`**: Armazena credenciais AWS
 
 
@@ -117,7 +117,9 @@ Se você não tem uma conta AWS, crie uma em [aws.amazon.com](https://aws.amazon
                 "s3:GetObject",
                 "s3:PutObject",
                 "s3:DeleteObject",
-                "s3:ListBucket"
+                "s3:ListBucket",
+                "s3:GetObjectTagging",
+                "s3:PutObjectTagging"
             ],
             "Resource": [
                 "arn:aws:s3:::seu-bucket-workstate",
@@ -166,14 +168,10 @@ workstate configure --access-key-id AKIA... --secret-access-key xxx --region us-
 ### 2. Inicializar Seu Projeto
 
 ```bash
-# Inicializar com um template específico
-workstate init --tool python
-
-# Ou usar o template padrão
 workstate init
 ```
 
-Isso cria um arquivo `.workstateignore` otimizado para sua stack de desenvolvimento.
+Isso cria um arquivo `.workstateinclude` com um template de whitelist minimalista (ex: `src/`, `README.md`, `pyproject.toml`).
 
 ### 3. Verificar O Que Será Salvo
 
@@ -194,7 +192,11 @@ Isso compacta todos os arquivos mapeados em .zip e carrega para o AWS S3. Use `-
 ### 5. Listar Estados Disponíveis
 
 ```bash
+# Listar todos os estados de todos os projetos (Global Scan)
 workstate list
+
+# Filtrar apenas pelo projeto atual
+workstate list --project
 ```
 Lista todos os zips no AWS S3 do Workstate.
 
@@ -221,12 +223,12 @@ workstate download --download-only
 |---------|-----------|------------|--------|
 | `config` | Exibe configuração atual do Workstate | - | - |
 | `configure` | Configura credenciais AWS | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
-| `init` | Inicializa um novo projeto Workstate com arquivo `.workstateignore` | - | `--tool, -t`: Tipo de ferramenta (padrão: `generic`) |
-| `status` | Mostra arquivos rastreados pelo Workstate | - | - |
-| `save` | Salva o estado atual do projeto no AWS S3 | `state_name`: Nome único para o estado | `--dry-run`, `--encrypt`, `--protect, -p`, `--description, -m`, `--tag` |
+| `init` | Inicializa um novo projeto Workstate com arquivo `.workstateinclude` | - | - |
+| `status` | Mostra arquivos incluídos no próximo snapshot | - | - |
+| `save` | Salva o estado atual do projeto no AWS S3 | `state_name` | `--dry-run`, `--encrypt`, `--protect, -p`, `--description, -m`, `--tag`, `--include, -i` |
 | `download` | Restaura um estado salvo do AWS S3 | - | `--only-download`, `--interactive, -i` |
 | `delete` | Exclui um estado salvo no AWS S3 | - | `--interactive, -i`, `--force` |
-| `list` | Lista todos os estados disponíveis no AWS S3 | - | `--interactive, -i`, `--system, -s`, `--branch, -b`, `--older-than, -o` |
+| `list` | Lista estados disponíveis no AWS S3 (Global por padrão) | - | `--project, -p`, `--interactive, -i`, `--system, -s`, `--branch, -b`, `--older-than, -o` |
 | `inspect` | Visualiza conteúdo de um ZIP de estado no S3 | `state_name` (opcional) | - |
 | `compare` | Compara arquivos locais com um estado remoto | `state_name` (opcional) | - |
 | `sync` | Realiza backup rotativo automatizado | - | `--retention, -r` (padrão: 5) |
@@ -278,15 +280,11 @@ workstate configure --region sa-east-1 --bucket-name my-workstate-bucket
 ```
 
 ### `init`
-**Funcionalidade:** Cria arquivo `.workstateignore` com template otimizado para a ferramenta especificada.
+**Funcionalidade:** Cria arquivo `.workstateinclude` com template de whitelist minimalista.
 
-**Ferramentas válidas:** `python`, `node`, `java`, `go`, `generic`
-
-**Exemplos:**
+**Exemplo:**
 ```bash
-workstate init --tool python
-workstate init -t node
-workstate init  # usa template generic
+workstate init
 ```
 
 ### `status`
@@ -304,6 +302,7 @@ workstate init  # usa template generic
 **Opções:**
 | Opção | Abreviação | Descrição |
 |-------|------------|-----------|
+| `--include` | `-i` | Inclusão ad-hoc de arquivos/padrões para este snapshot |
 | `--dry-run` | - | Simula o processo sem fazer upload |
 | `--encrypt` | - | Criptografa o backup com uma senha (AES) |
 | `--protect` | `-p` | Protege o estado contra deleção acidental |
@@ -311,7 +310,7 @@ workstate init  # usa template generic
 | `--tag` | - | Tags S3 customizadas no formato `chave=valor` |
 
 **Processo:**
-1. Analisa o `.workstateignore`
+1. Analisa o `.workstateinclude` (e o legado `.workstateignore` se presente)
 2. Varre em busca de arquivos sensíveis (ex: `.env`, `.pem`, `id_rsa`) e alerta o usuário
 3. Cria um ZIP temporário (criptografado se solicitado)
 4. Upload para o S3 dentro de uma pasta com o nome do projeto: `s3://seu-bucket/nome-do-projeto/nome-do-estado.zip`
@@ -410,6 +409,7 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 **Opções:**
 | Opção | Abreviação | Descrição |
 |-------|------------|-----------|
+| `--project` | `-p` | Filtrar apenas estados do projeto atual |
 | `--system` | `-s` | Filtrar por SO (Windows, Linux, Darwin) |
 | `--branch` | `-b` | Filtrar por branch do Git |
 | `--older-than`| `-o` | Filtrar por duração (ex: 7d, 1m, 24h) |
@@ -441,7 +441,7 @@ workstate inspect  # abre selecionador interativo
 
 **Processo:**
 1. Busca metadados do estado remoto
-2. Varre os arquivos locais (respeitando `.workstateignore`)
+2. Varre os arquivos locais (respeitando `.workstateinclude`)
 3. Mostra um diff: arquivos NOVOS, MODIFICADOS e AUSENTES localmente
 
 ### `sync`
@@ -470,10 +470,10 @@ workstate inspect  # abre selecionador interativo
 Estados protegidos são marcados com um ícone de **🔒 (cadeado vermelho)** no comando `list`.
 
 ### `profile`
-**Funcionalidade:** Gerencia configurações do `.workstateignore` como perfis reutilizáveis.
+**Funcionalidade:** Gerencia configurações do `.workstateinclude` como perfis reutilizáveis.
 
 **Subcomandos:**
-- `save <nome>`: Salva o `.workstateignore` atual como um perfil local
+- `save <nome>`: Salva o `.workstateinclude` atual como um perfil local
 - `list`: Mostra todos os perfis locais e remotos
 - `delete <nome>`: Remove um perfil (use `--remote` para S3)
 - `push <nome>`: Upload de perfil local para o S3
@@ -563,33 +563,26 @@ O Workstate segue um fluxo de CI/CD via GitHub Actions. Sempre que um novo Relea
 - Um Release correspondente no GitHub é criado com os binários pré-compilados para Windows.
 
 <details>
-  <summary><h2>Arquivo .workstateignore</h2></summary>
+  <summary><h2>Arquivo .workstateinclude</h2></summary>
 
-O arquivo `.workstateignore` funciona de forma similar ao `.gitignore`, mas define o que **ignorado** no snapshot do seu estado.
-A ideia é ignorar tudo que for referente ao repositório. Ele suporta:
+O arquivo `.workstateinclude` define o que é **incluído** no snapshot do seu estado.
+Ele utiliza uma abordagem de whitelist para garantir que apenas arquivos necessários sejam capturados. Ele suporta:
 
-- **Padrões glob**: `*.env`, `config/*`, `!.jar`
-- **Inclusão de diretórios**: `/.vscode/`
-- **Arquivos específicos**: `database.sqlite3`
+- **Padrões glob**: `*.env`, `config/*`
+- **Inclusão de diretórios**: `src/`, `.vscode/`
+- **Arquivos específicos**: `README.md`, `pyproject.toml`
 - **Comentários**: Linhas começando com `#`
 
-### Exemplo .workstateignore para Python:
+### Exemplo .workstateinclude:
 
 ```gitignore
-# Ignora arquivos do repositório e mantém arquivos de desenvolvimento local de um projeto Python
+# Incluir explicitamente estes arquivos/diretórios
+.workstateinclude
 src/
-.ruff_cache/
-__pycache__
-venv
-.venv
-requirements.txt
-pyproject.*
-.git
-.gitignore
-LICENSE
+config/
 README.md
-main.py
-logs/
+pyproject.toml
+.env.example
 ```
 
 </details>
@@ -620,7 +613,7 @@ logs/
 
 ### O Que NÃO Incluir
 
-Tenha cuidado para não incluir no seu `.workstateignore`:
+Tenha cuidado para não esquecer de incluir no seu `.workstateinclude`:
 - Arquivos binários grandes que mudam com frequência
 - Arquivos temporários do sistema
 - Arquivos específicos do SO (`.DS_Store`, `Thumbs.db`)
@@ -652,12 +645,12 @@ Tenha cuidado para não incluir no seu `.workstateignore`:
 - Verifique se seu usuário IAM tem permissões S3
 - Certifique-se de que o bucket S3 existe e está acessível
 
-**"Arquivo .workstateignore não encontrado":**
+**"Arquivo .workstateinclude não encontrado":**
 - Execute `workstate init` para criar um
 - Certifique-se de estar no diretório correto do projeto
 
 **Tempos de upload longos:**
-- Verifique seu arquivo `.workstateignore` para arquivos grandes desnecessários
+- Verifique seu arquivo `.workstateinclude` para arquivos grandes desnecessários
 - Considere a velocidade da sua conexão com a internet
 - Use `workstate status` para revisar o que está sendo carregado
 
