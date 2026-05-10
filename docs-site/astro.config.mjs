@@ -6,6 +6,10 @@ import starlight from '@astrojs/starlight';
 export default defineConfig({
 	site: 'https://mtpontes.github.io',
 	base: '/workstate',
+	redirects: {
+		'/': '/workstate/guides/installation/',
+		'/pt-br': '/workstate/pt-br/guides/installation/',
+	},
 	devToolbar: {
 		enabled: false,
 	},

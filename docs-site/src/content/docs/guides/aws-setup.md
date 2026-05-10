@@ -14,7 +14,7 @@ While Workstate can create a bucket for you during `workstate configure`, you ca
 
 ## 2. IAM Permissions
 
-The user or role running Workstate needs the following permissions on the target bucket:
+The user or role running Workstate needs the following permissions on the target bucket. These allow Workstate to manage files, metadata, and tags (used for branch and system tracking).
 
 ```json
 {
@@ -26,7 +26,9 @@ The user or role running Workstate needs the following permissions on the target
                 "s3:PutObject",
                 "s3:GetObject",
                 "s3:ListBucket",
-                "s3:DeleteObject"
+                "s3:DeleteObject",
+                "s3:GetObjectTagging",
+                "s3:PutObjectTagging"
             ],
             "Resource": [
                 "arn:aws:s3:::your-bucket-name",
@@ -44,3 +46,13 @@ Run the configuration command to link Workstate to your bucket:
 ```bash
 workstate configure
 ```
+
+## 4. Troubleshooting with Doctor
+
+If you encounter issues with permissions or connectivity, run:
+
+```bash
+workstate doctor
+```
+
+The **doctor** command provides a detailed report of your local environment and AWS connectivity, highlighting exactly what might be misconfigured.

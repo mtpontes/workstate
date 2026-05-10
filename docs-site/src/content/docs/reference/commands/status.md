@@ -1,9 +1,9 @@
 ---
 title: status
-description: Show differences between local state and the latest backup on S3.
+description: View which files are currently being tracked and included for snapshots.
 ---
 
-The `status` command helps you understand if your local environment is up-to-date or if you have unsaved changes.
+The `status` command lists all files in your project that match the rules in your `.workstateinclude` (whitelist) or `.workstateignore` (legacy blacklist). It's the best way to verify what will be uploaded before running `save`.
 
 ## Usage
 
@@ -13,18 +13,24 @@ workstate status
 
 ## Information Displayed
 
-- **Sync Status**: Tells you if you are ahead or behind the cloud.
-- **Changed Files**: Lists environment variables or config files that differ.
-- **Last Sync**: Shows the timestamp of the last successful `save` or `download`.
+- **Included Files**: A list of all files that Workstate is currently tracking.
+- **Total Size**: The combined size of all tracked files.
+- **Project Context**: Information about your current project name and AWS bucket.
 
 ## Examples
 
 ```bash
 $ workstate status
-🔍 Checking state...
+🔍 Analyzing project state...
 
-[MODIFIED] .env
-[UNCHANGED] package.json
+Current project: workstate
+S3 Bucket: my-work-states
 
-You have local changes not yet saved to S3.
+Tracked files (Whitelist mode):
+- .workstateinclude
+- src/main.py
+- src/services/file_service.py
+- README.md
+
+Total: 4 files (145.2 KB)
 ```

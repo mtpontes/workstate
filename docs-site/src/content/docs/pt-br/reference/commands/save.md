@@ -3,42 +3,43 @@ title: save
 description: Captura e faz o upload do estado atual para o S3.
 ---
 
-O `save` é o comando principal para preservar seu trabalho. Ele empacota, opcionalmente criptografa e envia seu ambiente para a nuvem.
+O comando `save` cria um "snapshot" (foto) do seu ambiente e o armazena com segurança na nuvem. Ele segue as regras de inclusão definidas no seu arquivo `.workstateinclude`.
 
 ## Uso
 
 ```bash
-workstate save [OPTIONS] [NAME]
+workstate save [NAME] [OPTIONS]
 ```
-
-## Argumentos
-
-- `NAME`: (Opcional) Um nome amigável para o backup (ex: `pos-setup-inicial`). Se não fornecido, o Workstate gera um nome baseado na data e hora.
 
 ## Opções
 
-- `--encrypt`: Ativa a criptografia AES no lado do cliente. Você será solicitado a criar ou digitar uma senha.
-- `--dry-run`: Simula a operação. Mostra exatamente quais arquivos seriam incluídos no pacote sem fazer upload.
-- `--protect`: Marca o backup como protegido. Ele não poderá ser deletado automaticamente por políticas de retenção ou pelo comando `delete` (a menos que a proteção seja removida).
-- `--retention DAYS`: (Avançado) Define uma data de expiração personalizada para este backup específico.
+- `-i, --include PATH`: Adiciona arquivos ou padrões extras apenas para este snapshot (inclusão ad-hoc).
+- `--encrypt`: Criptografa o backup localmente antes do upload.
+- `-p, --protect`: Marca o estado como "protegido" para evitar deleção acidental.
+- `-m, --description TEXT`: Adiciona uma nota descritiva ou motivo ao backup.
+- `--tag KEY=VALUE`: Aplica tags customizadas ao objeto no S3 para facilitar a filtragem.
+- `--dry-run`: Simula o processo e lista os arquivos que seriam capturados, sem fazer o upload.
 
 ## Exemplos
 
-### Salvamento Simples
 ```bash
-workstate save
+# Salvamento simples usando as regras do .workstateinclude
+workstate save "setup-base"
+
+# Salvamento com inclusão ad-hoc (ex: um log específico)
+workstate save "sessao-debug" --include "logs/error.log"
+
+# Inclusão de múltiplos padrões
+workstate save "estado-completo" -i "config/*.yaml" -i "data/*.csv"
+
+# Salvamento criptografado e protegido com descrição
+workstate save "ambiente-prod" --encrypt --protect -m "Sincronização inicial de produção"
 ```
 
-### Salvamento com Nome e Criptografia
-```bash
-workstate save --encrypt "snapshot-ambiente-estavel"
-```
+:::tip[Dica de Pro]
+Use `workstate status` antes de salvar para verificar exatamente quais arquivos estão sendo selecionados pela sua whitelist.
+:::
 
-### Apenas Verificar o que será salvo
-```bash
-workstate save --dry-run
-```
-
-:::caution[Segurança]
-Ao usar `--encrypt`, **não perca sua senha**. O Workstate não armazena sua senha de criptografia e os arquivos não poderão ser recuperados sem ela.
+:::caution[Importante]
+Se você usar `--encrypt`, será solicitada uma senha. **Nós não armazenamos suas senhas.** Se você perdê-la, o estado não poderá ser restaurado.
 :::

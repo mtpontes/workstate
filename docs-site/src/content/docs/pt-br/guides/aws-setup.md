@@ -19,7 +19,7 @@ O usuário que executará o comando `workstate` precisa de permissões para ler,
 
 ### Política Recomendada (JSON)
 
-Crie uma política IAM no console AWS e anexe-a ao seu usuário:
+Crie uma política IAM no console AWS e anexe-a ao seu usuário. Essas permissões permitem que o Workstate gerencie arquivos, metadados e tags (usados para rastreamento de branch e sistema).
 
 ```json
 {
@@ -31,7 +31,9 @@ Crie uma política IAM no console AWS e anexe-a ao seu usuário:
                 "s3:GetObject",
                 "s3:PutObject",
                 "s3:DeleteObject",
-                "s3:ListBucket"
+                "s3:ListBucket",
+                "s3:GetObjectTagging",
+                "s3:PutObjectTagging"
             ],
             "Resource": [
                 "arn:aws:s3:::seu-bucket-workstate",
@@ -56,3 +58,13 @@ O Workstate utilizará as credenciais configuradas na sua máquina (via `aws con
 :::tip[Dica]
 Se você já configurou a AWS CLI antes, o Workstate detectará automaticamente seu perfil padrão.
 :::
+
+## 4. Resolução de Problemas com Doctor
+
+Se você encontrar problemas com permissões ou conectividade, execute:
+
+```bash
+workstate doctor
+```
+
+O comando **doctor** fornece um relatório detalhado do seu ambiente local e da conectividade AWS, destacando exatamente o que pode estar mal configurado.

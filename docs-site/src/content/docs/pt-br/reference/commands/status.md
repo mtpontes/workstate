@@ -1,9 +1,9 @@
 ---
 title: status
-description: Exibe as diferenças entre o estado local e o último backup no S3.
+description: Veja quais arquivos estão sendo rastreados e incluídos para snapshots.
 ---
 
-O comando `status` permite que você veja o que mudou no seu ambiente desde a última vez que você salvou ou baixou um estado.
+O comando `status` lista todos os arquivos no seu projeto que coincidem com as regras no seu `.workstateinclude` (whitelist) ou `.workstateignore` (blacklist legado). É a melhor forma de verificar o que será enviado antes de rodar o `save`.
 
 ## Uso
 
@@ -13,20 +13,24 @@ workstate status
 
 ## Informações Exibidas
 
-O comando realiza uma comparação rápida (usando hashes de arquivos) e reporta:
-- **Arquivos Novos**: Arquivos locais que ainda não estão no S3.
-- **Arquivos Modificados**: Arquivos que existem em ambos, mas têm conteúdos diferentes.
-- **Arquivos Deletados**: Arquivos que estão no S3 mas foram removidos localmente.
+- **Arquivos Incluídos**: Uma lista de todos os arquivos que o Workstate está rastreando no momento.
+- **Tamanho Total**: A soma do tamanho de todos os arquivos rastreados.
+- **Contexto do Projeto**: Informações sobre o nome do projeto atual e o bucket AWS configurado.
 
 ## Exemplos
 
 ```bash
 $ workstate status
-🔍 Verificando estado do ambiente...
+🔍 Analisando estado do projeto...
 
-[MODIFICADO] .env
-[NOVO]       .vscode/settings.json
-[DELETADO]   temp_log.db
+Projeto atual: workstate
+Bucket S3: meu-bucket-backups
 
-O ambiente está divergente do S3. Use 'workstate save' para subir as mudanças.
+Arquivos rastreados (Modo Whitelist):
+- .workstateinclude
+- src/main.py
+- src/services/file_service.py
+- README.md
+
+Total: 4 arquivos (145.2 KB)
 ```

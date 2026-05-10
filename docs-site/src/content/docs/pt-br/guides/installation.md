@@ -29,29 +29,25 @@ cd workstate
 pip install -r requirements.txt
 ```
 
-## Configuração da AWS
+## Verificando a Instalação
 
-Para que o Workstate funcione, você precisará de um bucket S3 e um usuário IAM com as permissões corretas.
+Após a instalação, execute o comando abaixo para verificar a versão:
 
-### Permissões Necessárias (IAM)
-
-```json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:GetObject",
-                "s3:PutObject",
-                "s3:DeleteObject",
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::seu-bucket-workstate",
-                "arn:aws:s3:::seu-bucket-workstate/*"
-            ]
-        }
-    ]
-}
+```bash
+workstate --version
 ```
+
+### Validando a Configuração (Comando Doctor)
+
+Para garantir que tudo esteja configurado corretamente — incluindo suas credenciais AWS e permissões do S3 — use o comando **doctor**:
+
+```bash
+workstate doctor
+```
+
+Este comando irá:
+1. Verificar se o arquivo de configuração existe.
+2. Validar suas chaves de acesso AWS.
+3. Testar a conectividade e permissões no bucket S3 configurado.
+
+Se tudo estiver verde, você está pronto para começar!
