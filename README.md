@@ -24,7 +24,7 @@ Workstate solves these problems by creating compressed snapshots of your develop
 ## Key Features
 
 - **S3 Prefix Organization**: Automatically organizes backups into folders based on project names, allowing one bucket to host multiple projects cleanly.
-- **Smart File Selection**: Uses `.workstateignore` files (similar to `.gitignore`) to define what should be included in the environment snapshot
+- **Smart File Selection**: Uses a **whitelist** approach via `.workstateinclude` files to explicitly define what should be captured.
 - **Client-side Encryption**: Secure your backups with password-based AES encryption (`--encrypt`)
 - **Interactive Interface**: Friendly CLI with rich formatting, interactive menus, and **fuzzy search** support
 - **Real-time Progress**: Visual feedback for uploads and downloads with progress bars
@@ -34,7 +34,7 @@ Workstate solves these problems by creating compressed snapshots of your develop
 - **Deep Inspection**: View ZIP contents and metadata directly on S3 without downloading (`inspect` command)
 - **Automated Rotation**: Smart rolling backups with configurable retention (`sync` command)
 - **State Protection**: Protect important states from accidental deletion (`protect` command)
-- **AWS S3 Integration**: Secure cloud storage for your development states
+- **AWS S3 Integration**: Secure cloud storage for your development states. Now with **Global Scan** support to find states across all projects.
 - **Sharing**: Share/import states using temporary pre-signed AWS S3 URLs and automatic clipboard copying
 - **Git Hooks Integration**: Optional git hooks to remind you to save your state before pushing or restore it after switching branches
 - **Update Notifications**: Automatic background checks for new versions to keep your tool up to date
@@ -64,6 +64,18 @@ If you are using `workstate.exe`, ignore this topic.
 - Python 3.8+
 - AWS account with S3 access
 - pip
+
+### Dependencies
+
+- **typer**: CLI Framework
+- **rich**: Terminal formatting
+- **boto3**: AWS SDK for Python
+- **pyperclip**: Cross-platform clipboard support
+
+### Configuration Files
+
+- **`.workstateinclude`**: Defines files/directories to explicitly include in snapshots
+- **`~/.workstate/config.json`**: Stores AWS credentials
 
 ### Install via pip (Recommended)
 
@@ -105,7 +117,9 @@ If you don't have an AWS account, create one at [aws.amazon.com](https://aws.ama
                 "s3:GetObject",
                 "s3:PutObject",
                 "s3:DeleteObject",
-                "s3:ListBucket"
+                "s3:ListBucket",
+                "s3:GetObjectTagging",
+                "s3:PutObjectTagging"
             ],
             "Resource": [
                 "arn:aws:s3:::your-workstate-bucket",
@@ -154,14 +168,10 @@ workstate configure --access-key-id AKIA... --secret-access-key xxx --region us-
 ### 2. Initialize Your Project
 
 ```bash
-# Initialize with a specific template
-workstate init --tool python
-
-# Or use the default template
 workstate init
 ```
 
-This creates a `.workstateignore` file optimized for your development stack.
+This creates a `.workstateinclude` file with a minimalist whitelist template (e.g., `src/`, `README.md`, `pyproject.toml`).
 
 ### 3. Verify What Will Be Saved
 
@@ -182,9 +192,13 @@ This zips all mapped files (the same ones listed in the status command) and uplo
 ### 5. List Available States
 
 ```bash
+# List all states across all projects (Global Scan)
 workstate list
+
+# List only for current project
+workstate list --project
 ```
-Lists all zips in Workstate's AWS S3 bucket.
+Lists ZIP files in your AWS S3 bucket.
 
 ### 6. Restore a State
 Downloads a state and unzips it locally. If there are file conflicts, reliable copies from the zip will be saved as duplicates following the pattern (duplicate_number), for example: file.txt, file (1).txt, file (2).txt.
@@ -209,12 +223,12 @@ workstate download --download-only
 |---------|-------------|-----------|---------|
 | `config` | Displays current Workstate configuration | - | - |
 | `configure` | Configures AWS credentials | - | `--access-key-id, -a`, `--secret-access-key, -s`, `--region, -r`, `--bucket-name, -b`, `--interactive, -i` |
-| `init` | Initializes a new Workstate project with `.workstateignore` file | - | `--tool, -t`: Tool type (default: `generic`) |
-| `status` | Shows files tracked by Workstate | - | - |
-| `save` | Saves the current project state to AWS S3 | `state_name`: Unique name for the state | `--dry-run`, `--encrypt`, `--protect, -p`, `--description, -m`, `--tag` |
+| `init` | Initializes a new Workstate project with `.workstateinclude` file | - | - |
+| `status` | Shows files included in the next snapshot | - | - |
+| `save` | Saves the current project state to AWS S3 | `state_name` | `--dry-run`, `--encrypt`, `--protect, -p`, `--description, -m`, `--tag`, `--include, -i` |
 | `download` | Restores a saved state from AWS S3 | - | `--only-download`, `--interactive, -i` |
 | `delete` | Deletes a saved state in AWS S3 | - | `--interactive, -i`, `--force` |
-| `list` | Lists all available states in AWS S3 | - | `--interactive, -i`, `--system, -s`, `--branch, -b`, `--older-than, -o` |
+| `list` | Lists states available in AWS S3 (Global by default) | - | `--project, -p`, `--interactive, -i`, `--system, -s`, `--branch, -b`, `--older-than, -o` |
 | `inspect` | Views contents of a state ZIP on S3 | `state_name` (optional) | - |
 | `compare` | Compares local files with a remote state | `state_name` (optional) | - |
 | `sync` | Performs automated rolling backup | - | `--retention, -r` (default: 5) |
@@ -266,15 +280,11 @@ workstate configure --region sa-east-1 --bucket-name my-workstate-bucket
 ```
 
 ### `init`
-**Functionality:** Creates `.workstateignore` file with an optimized template for the specified tool.
+**Functionality:** Creates a `.workstateinclude` file with a minimalist whitelist template.
 
-**Valid Tools:** `python`, `node`, `java`, `go`, `generic`
-
-**Examples:**
+**Example:**
 ```bash
-workstate init --tool python
-workstate init -t node
-workstate init  # uses generic template
+workstate init
 ```
 
 ### `status`
@@ -292,6 +302,7 @@ workstate init  # uses generic template
 **Options:**
 | Option | Abbreviation | Description |
 |--------|--------------|-------------|
+| `--include` | `-i` | Ad-hoc inclusion of files/patterns for this snapshot |
 | `--dry-run` | - | Simulates without uploading |
 | `--encrypt` | - | Encrypts the backup with a password (AES) |
 | `--protect` | `-p` | Prevents accidental deletion of this state |
@@ -299,7 +310,7 @@ workstate init  # uses generic template
 | `--tag` | - | Custom S3 tags in `key=value` format |
 
 **Process:**
-1. Parses `.workstateignore`
+1. Parses `.workstateinclude` (and legacy `.workstateignore` if present)
 2. Scans for sensitive files (e.g., `.env`, `.pem`, `id_rsa`) and alerts the user
 3. Creates temporary ZIP (encrypted if requested)
 4. Uploads to S3 inside a folder named after your project: `s3://your-bucket/project-name/state-name.zip`
@@ -397,6 +408,7 @@ workstate download-pre-signed "https://bucket.s3.region.amazonaws.com/file.zip" 
 **Options:**
 | Option | Abbreviation | Description |
 |--------|--------------|-------------|
+| `--project` | `-p` | Filter only states belonging to the current project |
 | `--system` | `-s` | Filter by OS (Windows, Linux, Darwin) |
 | `--branch` | `-b` | Filter by Git branch |
 | `--older-than`| `-o` | Filter by duration (e.g., 7d, 1m, 24h) |
@@ -550,33 +562,26 @@ Workstate follows a CI/CD flow using GitHub Actions. Whenever a new Release is p
 - A corresponding GitHub Release is created with pre-built Windows binaries.
 
 <details>
-  <summary><h2>.workstateignore File</h2></summary>
+  <summary><h2>.workstateinclude File</h2></summary>
 
-The `.workstateignore` file works similarly to `.gitignore`, but defines what is **ignored** in your state snapshot.
-The idea is to ignore everything related to the repository. It supports:
+The `.workstateinclude` file defines what is **included** in your state snapshot.
+It uses a whitelist approach to ensure only necessary files are captured. It supports:
 
-- **Glob patterns**: `*.env`, `config/*`, `!.jar`
-- **Directory inclusion**: `/.vscode/`
-- **Specific files**: `database.sqlite3`
+- **Glob patterns**: `*.env`, `config/*`
+- **Directory inclusion**: `src/`, `.vscode/`
+- **Specific files**: `README.md`, `pyproject.toml`
 - **Comments**: Lines starting with `#`
 
-### Example .workstateignore for Python:
+### Example .workstateinclude:
 
 ```gitignore
-# Ignores repository files and keeps local development files of a Python project
+# Explicitly include these files/directories
+.workstateinclude
 src/
-.ruff_cache/
-__pycache__
-venv
-.venv
-requirements.txt
-pyproject.*
-.git
-.gitignore
-LICENSE
+config/
 README.md
-main.py
-logs/
+pyproject.toml
+.env.example
 ```
 
 </details>
