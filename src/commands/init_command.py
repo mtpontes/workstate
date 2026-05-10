@@ -61,20 +61,18 @@ class InitCommandImpl(CommandI):
 
             # 3. Create the file
             if profile_content:
-                # Manual creation if it's a profile
-                from pathlib import Path
-                from src.constants.constants import IGNORE_FILE, WRITE_OPERATOR
-                ignore_file = Path(IGNORE_FILE)
-                if not ignore_file.exists():
-                    with ignore_file.open(mode=WRITE_OPERATOR, encoding="utf-8") as f:
+                from src.constants.constants import INCLUDE_FILE, WRITE_OPERATOR
+                include_file = Path(INCLUDE_FILE)
+                if not include_file.exists():
+                    with include_file.open(mode=WRITE_OPERATOR, encoding="utf-8") as f:
                         f.write(f"{profile_content}\n")
                 tool_name = self.profile
             else:
-                file_service.create_workstateignore(selected_tool)
-                tool_name = selected_tool.value
+                self.file_service.create_workstateinclude(selected_tool)
+                tool_name = selected_tool.value if selected_tool else "minimal"
 
             self.console.print(
-                Text(f"\n[OK] .workstateignore created for tool/profile '{tool_name}' \n", style="bold green")
+                Text(f"\n[OK] .workstateinclude created for tool/profile '{tool_name}' \n", style="bold green")
             )
 
         except ValueError as e:
