@@ -33,7 +33,8 @@ class ListCommandImpl(CommandI):
         system_filter: str = None,
         branch_filter: str = None,
         older_than_filter: str = None,
-        use_cache: bool = True
+        use_cache: bool = True,
+        global_scan: bool = True
     ):
         self.console = console
         self.views = views
@@ -44,6 +45,7 @@ class ListCommandImpl(CommandI):
         self.branch_filter = branch_filter
         self.older_than_filter = older_than_filter
         self.use_cache = use_cache
+        self.global_scan = global_scan
 
     def execute(self) -> None:
         s3_client.validate_credentials()
@@ -56,7 +58,8 @@ class ListCommandImpl(CommandI):
                 system=self.system_filter,
                 branch=self.branch_filter,
                 older_than=self.older_than_filter,
-                use_cache=self.use_cache
+                use_cache=self.use_cache,
+                global_scan=self.global_scan
             )
 
         table: Table = self.views.zip_files_table(zip_files)
