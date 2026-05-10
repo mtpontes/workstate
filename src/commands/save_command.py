@@ -45,6 +45,7 @@ class SaveCommandImpl(CommandI):
         description: str = None,
         tags: list[str] = None,
         protect: bool = False,
+        extra_includes: list[str] = None,
     ) -> None:
         self.state_name = state_name
         self.console = console
@@ -57,11 +58,12 @@ class SaveCommandImpl(CommandI):
         self.description = description
         self.tags = tags
         self.protect = protect
+        self.extra_includes = extra_includes
 
 
     def execute(self) -> None:
         s3_client.validate_credentials()
-        files_to_save: list[Path] = self.file_service.select_files()
+        files_to_save: list[Path] = self.file_service.select_files(extra_includes=self.extra_includes)
 
         # Sensitive files scan (Filenames)
         sensitive_files = self.file_service.scan_for_sensitive_files(files_to_save)

@@ -28,6 +28,7 @@ import pathspec
 from src.constants.constants import (
     DOT_ZIP,
     IGNORE_FILE,
+    INCLUDE_FILE,
     READ_OPERATOR,
     SENSITIVE_PATTERNS,
     WRITE_BINARY_OPERATOR,
@@ -80,10 +81,34 @@ def create_workstateignore(tool: CodeTool) -> None:
             f.write(f"{worstateignore_content}\n")
 
 
-def select_files() -> list[Path]:
+def create_workstateinclude(tool: CodeTool = None) -> None:
     """
-    Selects all files in the project, ignoring the defaults defined in `.workstateignore`.
-    If `.workstateignore` does not exist, all files are returned.
+    Creates a `.workstateinclude` file with a minimal template,
+    if the file does not already exist.
+    """
+    include_file: Path = Path(INCLUDE_FILE)
+    if not include_file.exists():
+        with include_file.open(mode=WRITE_OPERATOR, encoding="utf-8") as f:
+            # Minimalist whitelist: include the whitelist itself and src directory by default
+            content = [
+                INCLUDE_FILE,
+                "src/",
+                "pyproject.toml",
+                "README.md"
+            ]
+            f.write("\n".join(content) + "\n")
+
+
+def select_files(extra_includes: list[str] = None) -> list[Path]:
+    """
+    Selects files in the project. 
+    Priority 1: .workstateinclude (Whitelist mode)
+    Priority 2: .workstateignore (Blacklist mode - Legacy)
+    
+    If neither exists, all files are returned.
+
+    Args:
+        extra_includes (list[str], optional): List of extra files or patterns to include.
 
     Returns:
         list[Path]: List of files to be considered.
@@ -91,18 +116,42 @@ def select_files() -> list[Path]:
     root = Path.cwd().resolve()
     all_files = [path for path in root.rglob("*") if path.is_file()]
 
+    include_file = root / INCLUDE_FILE
     ignore_file = root / IGNORE_FILE
-    if ignore_file.exists():
-        patterns = ignore_file.read_text().splitlines()
-        spec = pathspec.PathSpec.from_lines("gitwildmatch", patterns)
-        # Filters ignored files
-        ignored = set(root / p for p in spec.match_tree(root))
-        files = [file for file in all_files if file not in ignored]
-    else:
-        log.warning("No %s file found. All files will be selected.", IGNORE_FILE)
-        files = all_files
 
-    return files
+    if include_file.exists():
+        files = _filter_files(all_files, root, include_file, is_whitelist=True, extra_includes=extra_includes)
+        # Auto-include critical files
+        if include_file not in files:
+            files.append(include_file)
+        return files
+    
+    if ignore_file.exists():
+        # Even in ignore mode, if extra_includes are provided, we should probably handle them.
+        # But for now, let's stick to the whitelist engine migration goal.
+        return _filter_files(all_files, root, ignore_file, is_whitelist=False)
+    
+    log.warning("No %s or %s file found. All files will be selected.", INCLUDE_FILE, IGNORE_FILE)
+    return all_files
+
+
+def _filter_files(all_files: list[Path], root: Path, spec_file: Path, is_whitelist: bool, extra_includes: list[str] = None) -> list[Path]:
+    """
+    Internal helper to filter files using pathspec.
+    """
+    patterns = spec_file.read_text().splitlines()
+    if is_whitelist and extra_includes:
+        patterns.extend(extra_includes)
+        
+    spec = pathspec.PathSpec.from_lines("gitignore", patterns)
+    
+    matched_relative = set(spec.match_tree_files(root))
+    matched_absolute = set(root / p for p in matched_relative)
+    
+    if is_whitelist:
+        return [f for f in all_files if f in matched_absolute]
+    
+    return [f for f in all_files if f not in matched_absolute]
 
 
 def zip_files(files: list[Path], metadata: dict = None) -> Path:
