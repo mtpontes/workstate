@@ -1,29 +1,37 @@
 ---
 title: What is Captured
-description: Learn which files and settings Workstate tracks and backs up.
+description: Understand how Workstate uses an explicit inclusion system (whitelist) to manage your environment state.
 ---
 
-Workstate is designed to capture the "intelligence" of your environment without bloating your backups with binaries or temporary files.
+Workstate follows a **strict inclusion model** (whitelist). Instead of trying to guess what to exclude, it only captures what you explicitly tell it to. This approach ensures your backups are lean, secure, and predictable.
 
-## Tracked Files
+## The `.workstateinclude` File
 
-By default, Workstate looks for:
+The core of Workstate's selection engine is the `.workstateinclude` file. It works similarly to a `.gitignore`, but in reverse: **only the paths and patterns listed here will be captured.**
 
-- **Environment Variables**: `.env`, `.env.local`, `.env.development`.
-- **Shell Configs**: `.zshrc`, `.bashrc`, `.profile` (partially or via specific exports).
-- **Tool Configs**: `.nvmrc`, `package.json` (for version tracking), `pyproject.toml`, `.python-version`.
-- **Infrastructure**: `Dockerfile`, `docker-compose.yml`, Terraform files (`.tf`).
+### Default Inclusions
+When you run `workstate init`, a minimalist `.workstateinclude` is created with sensible defaults:
 
-## What is NOT Captured
+- `.workstateinclude` (it always tracks its own config)
+- `src/` (core source code)
+- `pyproject.toml` / `package.json` (dependency definitions)
+- `README.md`
 
-To keep backups lean and secure, we exclude:
+### Why Whitelisting?
+1. **Security**: You never accidentally backup sensitive logs or binaries that weren't meant to be shared.
+2. **Performance**: Smaller snapshots mean faster uploads and downloads.
+3. **Control**: You know exactly what constitutes your "work state".
 
-- `node_modules/`
-- `.git/` (we track the state, not the whole history)
-- `__pycache__/`
-- Large binary files (> 50MB by default)
-- OS-specific temp files (`.DS_Store`, `Thumbs.db`)
+## Critical Files Auto-Inclusion
 
-## Customization
+Even if not explicitly listed, Workstate ensures the following are always handled correctly:
+- **Config**: The `.workstateinclude` file itself is always included.
+- **Metadata**: Internal metadata used for restoration is automatically managed.
 
-You can customize what is captured using the `.workstateignore` file in your root directory, which follows the same syntax as `.gitignore`.
+## Legacy Support (Blacklist)
+
+If you have an existing project using `.workstateignore`, Workstate will still respect it as a fallback. However, **new projects always use `.workstateinclude`**, and we strongly recommend migrating legacy projects to the inclusion model.
+
+:::caution[Heads Up]
+If both files exist, `.workstateinclude` takes precedence and the ignore file will be bypassed.
+:::

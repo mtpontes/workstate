@@ -5,25 +5,17 @@ description: Automatize seu workflow com scripts pós-restauração e integraç�
 
 O Workstate permite automatizar tarefas repetitivas após a restauração do ambiente e integrar-se profundamente ao seu fluxo Git.
 
-## scripts Pós-Restauração (`.workstate-hooks`)
+## Scripts Pós-Restauração (`.workstate-hooks`)
 
-Você pode criar um arquivo chamado `.workstate-hooks` na raiz do seu projeto para executar comandos automaticamente após cada `download` ou `sync` bem-sucedido.
+Você pode criar scripts personalizados para serem executados imediatamente após um `download` ou `sync`. Isso é ideal para:
+- Reinstalar dependências (`npm install`, `pip install`).
+- Reiniciar serviços locais.
+- Configurar variáveis de ambiente.
 
-### Exemplo de `.workstate-hooks`:
+Crie um script chamado `.workstate-hooks/post-sync.sh` na raiz do seu projeto.
 
-```bash
-# Reinstala dependências se o ambiente mudou
-pip install -r requirements.txt
-
-# Limpa caches temporários
-python manage.py clean_cache
-
-# Notifica o time
-echo "Ambiente Workstate restaurado com sucesso!"
-```
-
-:::warning[Permissões]
-Em sistemas Linux/macOS, certifique-se de que o script tem permissão de execução (`chmod +x .workstate-hooks`). No Windows, ele é executado via PowerShell/CMD.
+:::warning[Importante]
+Como o Workstate agora utiliza um modelo de **whitelist** (inclusão explícita), você deve garantir que a pasta `.workstate-hooks/` esteja listada no seu arquivo `.workstateinclude`. Caso contrário, os scripts não serão incluídos nos seus snapshots e não estarão disponíveis quando você restaurar o ambiente em outra máquina.
 :::
 
 ## Integração com Git

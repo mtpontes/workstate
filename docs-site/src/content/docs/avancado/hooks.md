@@ -24,7 +24,11 @@ You can define custom shell scripts to run immediately after a `download` or `sy
 - Restarting local services.
 - Sourcing environment variables.
 
-Create a script named `.workstate/post-sync.sh` in your project root, and Workstate will execute it automatically.
+Create a script named `.workstate-hooks/post-sync.sh` in your project root. 
+
+:::warning[Important]
+Since Workstate now uses a **whitelist** model, you must ensure that your `.workstate-hooks/` folder is listed in your `.workstateinclude` file. Otherwise, the scripts will not be included in your snapshots and won't be available when you restore the environment on another machine.
+:::
 
 ## CI/CD Integration
 

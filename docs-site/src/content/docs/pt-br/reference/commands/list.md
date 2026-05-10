@@ -1,9 +1,9 @@
 ---
 title: list
-description: Lista todos os backups disponíveis no bucket S3.
+description: Lista os estados de ambiente disponíveis no S3.
 ---
 
-O comando `list` fornece uma visão clara do histórico de estados salvos para o seu projeto.
+O comando `list` exibe os estados armazenados no seu bucket S3. Por padrão, ele realiza um **scan global**, mostrando estados de todos os projetos presentes no bucket.
 
 ## Uso
 
@@ -11,25 +11,34 @@ O comando `list` fornece uma visão clara do histórico de estados salvos para o
 workstate list [OPTIONS]
 ```
 
-## Informações Exibidas na Tabela
-
-- **ID**: Identificador curto (ex: `e4f1b2`). Útil para o comando `download`.
-- **Name**: O nome amigável definido no `save`.
-- **Created At**: Data e hora da criação.
-- **Git Branch**: A branch onde o backup foi gerado.
-- **Git Hash**: O commit específico daquele estado.
-- **Protected**: Ícone de cadeado (🔒) se o backup estiver protegido contra deleção.
-
 ## Opções
 
-- `--json`: Retorna a lista em formato JSON (ideal para automações).
-- `--all-branches`: Mostra backups de todas as branches, não apenas da branch atual.
+- `-p, --project`: Filtra a lista para exibir apenas estados pertencentes ao projeto atual.
+- `-s, --system NOME`: Filtra pelo sistema operacional (ex: `Windows`, `Linux`).
+- `-b, --branch NOME`: Filtra pelo nome da branch Git.
+- `-o, --older-than DURACAO`: Mostra estados mais antigos que uma duração (ex: `30d` para 30 dias, `1y` para 1 ano).
+- `-i, --interactive`: Ativa o modo interativo para navegar e selecionar estados usando busca por proximidade (fuzzy search).
+- `--no-cache`: Ignora o cache local de metadados e busca a lista atualizada diretamente do S3.
 
 ## Exemplos
 
 ```bash
-$ workstate list
-ID      NAME                    BRANCH  CREATED AT            PROTECTED
-e4f1    setup-win              main     2024-03-10 10:00:00   🔒
-b2d1    pos-sync-api           dev      2024-03-12 15:30:00   
+# Lista todos os estados de todos os projetos (Padrão)
+workstate list
+
+# Mostra apenas estados do projeto atual
+workstate list --project
+
+# Busca estados de uma branch específica
+workstate list --branch feature/login
+
+# Navegação interativa
+workstate list -i
+
+# Limpeza: encontrar estados com mais de 6 meses
+workstate list --older-than 6m
 ```
+
+:::note[Nota]
+O Workstate utiliza um cache local para acelerar a listagem. Se você suspeitar que a lista está desatualizada, use a flag `--no-cache`.
+:::

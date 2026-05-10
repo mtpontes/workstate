@@ -1,42 +1,50 @@
 ---
 title: Quickstart
-description: Get up and running with Workstate in 2 minutes.
+description: Get up and running with Workstate in less than 5 minutes.
 ---
 
-Learn the basic workflow of Workstate: Capture, View, and Restore.
+Workstate helps you capture and restore your development environment. This guide covers the essential workflow: Setup, Initialize, Verify, and Save.
 
-## 1. Initialize
+## 1. Configure AWS
+Before anything else, you need to tell Workstate where to store your snapshots:
 
-Start tracking your current directory:
+```bash
+workstate configure
+```
+*You will be prompted for your AWS Access Key, Secret Key, Region, and S3 Bucket name.*
+
+## 2. Initialize your Project
+Go to your project's root directory and initialize it:
 
 ```bash
 workstate init
 ```
 
-## 2. Save your State
+This creates a `.workstateinclude` file with minimalist defaults. Unlike a blacklist, **only files listed here will be captured.**
 
-Capture everything and send it to S3:
+## 3. Verify what's captured
+Since we use a whitelist approach, it's a good idea to check what Workstate "sees":
 
 ```bash
-workstate save "my-first-backup"
+workstate status
+```
+*This command lists all files that will be included in the next snapshot.*
+
+## 4. Save your State
+Capture your current environment and upload it to S3:
+
+```bash
+workstate save "my-feature-setup"
 ```
 
-## 3. List Backups
-
-See what you have stored in the cloud:
+## 5. List and Restore
+To see your stored states and bring one back:
 
 ```bash
 workstate list
-```
-
-## 4. Restore
-
-Need to go back or setup on a new machine?
-
-```bash
-workstate download [ID]
+workstate download
 ```
 
 ## Next Steps
-
-- Explore the [Commands Reference](/workstate/reference/overview/) for advanced options like encryption and git hooks.
+- Learn more about [What is Captured](/workstate/foundations/what-is-captured/) (Whitelist vs Blacklist).
+- Explore [Command Reference](/workstate/reference/commands/save/) for advanced flags like `--include` and `--encrypt`.
