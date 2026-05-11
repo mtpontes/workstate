@@ -23,6 +23,7 @@ def _get_version() -> str:
 
 
 VERSION: Final[str] = _get_version()
+WORKSTATE_DIR: Final[Path] = Path.home() / ".workstate"
 
 ACCESS_KEY_ID: Final[str] = "access_key_id"
 SECRET_ACCESS_KEY: Final[str] = "secret_access_key"

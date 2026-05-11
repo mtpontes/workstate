@@ -3,16 +3,10 @@ import logging
 from pathlib import Path
 from datetime import UTC, datetime
 
-# Directory where the .py or .exe is located
-if getattr(sys, "frozen", False):
-    # When packaged with PyInstaller
-    BASE_DIR = Path(sys.executable).parent
-else:
-    # When running as a regular .py script
-    BASE_DIR = Path.cwd()
+from src.constants.constants import WORKSTATE_DIR
 
-# Create the logs folder relative to the executable or script location
-LOG_DIR = BASE_DIR / "logs"
+# Create the logs folder in ~/.workstate/logs
+LOG_DIR = WORKSTATE_DIR / "logs"
 LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Generate log filename with timestamp
