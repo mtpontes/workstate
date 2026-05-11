@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from src.constants.constants import AWS, READ_OPERATOR, WRITE_OPERATOR
+from src.constants.constants import AWS, READ_OPERATOR, WRITE_OPERATOR, WORKSTATE_DIR
 from src.model.aws_credentials import AWSCredentials
 from src.model.dto.aws_credentials_dto import AWSCredentialsDTO
 
@@ -29,7 +29,7 @@ class ConfigService:
     Manages AWS credentials and other relevant information persisted in `~/.workstate/config.json`.
     """
 
-    CONFIG_DIR = Path.home() / ".workstate"
+    CONFIG_DIR = WORKSTATE_DIR
     CONFIG_FILE = CONFIG_DIR / "config.json"
 
     @classmethod
